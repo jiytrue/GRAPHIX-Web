@@ -23,6 +23,8 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
   }, [])
 
   const fetchTickets = async (status?: string, tech?: string) => {
+    const filter = status || statusFilter
+    const techFilter = tech || technicianFilter
     try {
       setLoading(true)
       let query = supabase
@@ -30,16 +32,15 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (status && status !== 'all') {
-        query = query.eq('status', status)
+      if (filter !== 'all') {
+        query = query.eq('status', filter)
       }
 
-      if (tech && tech !== 'all') {
-        query = query.eq('assigned_technician', tech)
+      if (techFilter !== 'all') {
+        query = query.eq('assigned_technician', techFilter)
       }
 
       const { data, error } = await query
-
       if (error) throw error
       setTickets(data || [])
     } catch (error) {
@@ -55,7 +56,6 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         .from('technicians')
         .select('name')
         .eq('active', true)
-
       if (error) throw error
       setTechnicians(data?.map((t) => t.name) || [])
     } catch (error) {
@@ -63,33 +63,41 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
     }
   }
 
-  const handleStatusFilterChange = (status: string) => {
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value)
+    fetchTickets(value, technicianFilter)
+  }
+
+  const handleTechnicianFilterChange = (value: string) => {
+    setTechnicianFilter(value)
+    fetchTickets(statusFilter, value)
+  }
+
+  // Clickable stat card handler
+  const handleStatClick = (status: string) => {
     setStatusFilter(status)
     fetchTickets(status, technicianFilter)
   }
 
-  const handleTechnicianFilterChange = (tech: string) => {
-    setTechnicianFilter(tech)
-    fetchTickets(statusFilter, tech)
-  }
-
   const filteredTickets = tickets.filter(ticket => {
-    const search = searchTerm.toLowerCase()
+    if (!searchTerm) return true
+    const term = searchTerm.toLowerCase()
     return (
-      ticket.ticket_id.toLowerCase().includes(search) ||
-      ticket.customer_name.toLowerCase().includes(search) ||
-      ticket.customer_phone.toLowerCase().includes(search) ||
-      (ticket.device_model?.toLowerCase().includes(search) ?? false)
+      ticket.ticket_id.toLowerCase().includes(term) ||
+      ticket.customer_name.toLowerCase().includes(term) ||
+      ticket.customer_phone?.toLowerCase().includes(term) ||
+      ticket.device_model?.toLowerCase().includes(term) ||
+      ticket.device_type?.toLowerCase().includes(term)
     )
   })
 
   const getStats = () => {
     return {
       total: tickets.length,
-      pending: tickets.filter((t) => t.status === 'pending').length,
-      inProgress: tickets.filter((t) => t.status === 'in-progress').length,
-      completed: tickets.filter((t) => t.status === 'completed').length,
-      onHold: tickets.filter((t) => t.status === 'on-hold').length,
+      diagnosing: tickets.filter((t) => t.status === 'diagnosing').length,
+      repairing: tickets.filter((t) => t.status === 'repairing').length,
+      repaired: tickets.filter((t) => t.status === 'repaired').length,
+      received: tickets.filter((t) => t.status === 'received').length,
       cancelled: tickets.filter((t) => t.status === 'cancelled').length,
     }
   }
@@ -102,7 +110,7 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         status: newStatus,
         updated_at: new Date().toISOString(),
       }
-      if (newStatus === 'completed') {
+      if (newStatus === 'repaired') {
         updateData.completion_date = new Date().toISOString()
       }
       const { error } = await supabase
@@ -111,9 +119,9 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         .eq('id', ticketId)
       if (error) throw error
       const labels: Record<string, string> = {
-        'in-progress': 'Repair started!',
-        'completed': 'Marked as complete!',
-        'on-hold': 'Put on hold.',
+        'repairing': 'Repair started!',
+        'repaired': 'Marked as repaired!',
+        'received': 'Customer received!',
       }
       showToast?.(labels[newStatus] || 'Status updated!', 'success')
       fetchTickets(statusFilter, technicianFilter)
@@ -122,46 +130,31 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
     }
   }
 
+  const statCards = [
+    { label: 'Total', value: stats.total, status: 'all', color: 'bg-slate-50 text-slate-800 border-slate-200', ring: 'ring-slate-300' },
+    { label: 'Diagnosing', value: stats.diagnosing, status: 'diagnosing', color: 'bg-amber-50 text-amber-800 border-amber-200', ring: 'ring-amber-300' },
+    { label: 'Repairing', value: stats.repairing, status: 'repairing', color: 'bg-blue-50 text-blue-800 border-blue-200', ring: 'ring-blue-300' },
+    { label: 'Repaired', value: stats.repaired, status: 'repaired', color: 'bg-emerald-50 text-emerald-800 border-emerald-200', ring: 'ring-emerald-300' },
+    { label: 'Received', value: stats.received, status: 'received', color: 'bg-purple-50 text-purple-800 border-purple-200', ring: 'ring-purple-300' },
+    { label: 'Cancelled', value: stats.cancelled, status: 'cancelled', color: 'bg-slate-100 text-slate-600 border-slate-200', ring: 'ring-slate-300' },
+  ]
+
   return (
     <div className="space-y-8 animate-slide-in">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard 
-          label="Total" 
-          value={stats.total} 
-          color="bg-slate-100 text-slate-900"
-          icon="📊"
-        />
-        <StatCard 
-          label="Pending" 
-          value={stats.pending} 
-          color="bg-amber-100 text-amber-900"
-          icon="⏳"
-        />
-        <StatCard 
-          label="In Progress" 
-          value={stats.inProgress} 
-          color="bg-blue-100 text-blue-900"
-          icon="⚙️"
-        />
-        <StatCard 
-          label="On Hold" 
-          value={stats.onHold} 
-          color="bg-rose-100 text-rose-900"
-          icon="⏸️"
-        />
-        <StatCard 
-          label="Completed" 
-          value={stats.completed} 
-          color="bg-emerald-100 text-emerald-900"
-          icon="✓"
-        />
-        <StatCard 
-          label="Cancelled" 
-          value={stats.cancelled} 
-          color="bg-slate-200 text-slate-800"
-          icon="✕"
-        />
+      {/* Stats Cards - Clickable */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        {statCards.map(card => (
+          <button
+            key={card.status}
+            onClick={() => handleStatClick(card.status)}
+            className={`p-4 rounded-xl border transition-all text-left hover:shadow-md active:scale-95 ${card.color} ${
+              statusFilter === card.status ? `ring-2 ${card.ring} shadow-md` : ''
+            }`}
+          >
+            <p className="text-2xl md:text-3xl font-bold">{card.value}</p>
+            <p className="text-xs font-medium mt-1 opacity-80">{card.label}</p>
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -181,39 +174,36 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
             >
               <option value="all">All Technicians</option>
               {technicians.map((tech) => (
-                <option key={tech} value={tech}>
-                  {tech}
-                </option>
+                <option key={tech} value={tech}>{tech}</option>
               ))}
             </select>
           </div>
+          <div className="flex items-center gap-2 w-full md:flex-1">
+            <Search className="text-slate-400 flex-shrink-0" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, phone, model..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2 w-full">
-          <Search className="text-slate-400 flex-shrink-0" size={20} />
-          <input
-            type="text"
-            placeholder="Search by Ticket ID, Customer Name, Phone, or Device..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm"
-          />
-        </div>
+        {searchTerm && (
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-slate-500">
+              Showing <strong>{filteredTickets.length}</strong> of {tickets.length} tickets
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Tickets List */}
+      {/* Tickets Grid */}
       <div>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">Repair Tickets</h2>
-          {searchTerm && (
-            <p className="text-sm text-slate-500">
-              {filteredTickets.length} result{filteredTickets.length !== 1 ? 's' : ''} found
-            </p>
-          )}
-        </div>
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="flex flex-col items-center gap-3">
-              <Loader className="animate-spin text-maroon-600" size={36} />
+              <Loader className="animate-spin text-navy-600" size={36} />
               <p className="text-slate-600 text-sm font-medium">Loading tickets...</p>
             </div>
           </div>
@@ -239,30 +229,6 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
             ))}
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  color,
-  icon,
-}: {
-  label: string
-  value: number
-  color: string
-  icon: string
-}) {
-  return (
-    <div className={`card p-4 sm:p-5 ${color} space-y-2 transition-transform hover:scale-105`}>
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-xs font-medium opacity-75 mb-1">{label.toUpperCase()}</p>
-          <p className="text-2xl sm:text-3xl font-bold">{value}</p>
-        </div>
-        <span className="text-xl sm:text-2xl">{icon}</span>
       </div>
     </div>
   )

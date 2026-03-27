@@ -4,9 +4,10 @@ import CreateTicket from './pages/CreateTicket'
 import TicketDetail from './pages/TicketDetail'
 import Login from './pages/Login'
 import AdminPartsManagement from './pages/AdminPartsManagement'
+import PartsOrders from './pages/PartsOrders'
 import Navigation from './components/Navigation'
 
-type PageType = 'dashboard' | 'create' | 'detail' | 'admin-parts'
+type PageType = 'dashboard' | 'create' | 'detail' | 'admin-parts' | 'parts-orders'
 
 // Toast notification system
 type ToastType = 'success' | 'error' | 'info'
@@ -77,9 +78,11 @@ function App() {
   }
 
   const handleAdminParts = () => {
-    if (user?.role === 'admin') {
-      setCurrentPage('admin-parts')
-    }
+    setCurrentPage('admin-parts')
+  }
+
+  const handlePartsOrders = () => {
+    setCurrentPage('parts-orders')
   }
 
 
@@ -103,6 +106,7 @@ function App() {
         user={user}
         onLogout={handleLogout}
         onAdminClick={handleAdminParts}
+        onOrdersClick={handlePartsOrders}
       />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {currentPage === 'dashboard' && (
@@ -120,7 +124,10 @@ function App() {
           />
         )}
         {currentPage === 'admin-parts' && (
-          <AdminPartsManagement onBack={handleBackToDashboard} />
+          <AdminPartsManagement onBack={handleBackToDashboard} user={user} />
+        )}
+        {currentPage === 'parts-orders' && (
+          <PartsOrders onBack={handleBackToDashboard} user={user} />
         )}
       </main>
 

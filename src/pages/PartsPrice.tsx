@@ -48,7 +48,7 @@ export default function PartsPrice({ onBack }: PartsPriceProps) {
       {onBack && (
         <button
           onClick={onBack}
-          className="mb-6 flex items-center gap-2 text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
+          className="mb-6 flex items-center gap-2 text-navy-600 hover:text-navy-700 font-medium transition-colors"
         >
           <ArrowLeft size={20} />
           Back to Dashboard
@@ -73,7 +73,7 @@ export default function PartsPrice({ onBack }: PartsPriceProps) {
               }}
               className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
                 selectedDeviceType === type
-                  ? 'bg-maroon-600 text-white'
+                  ? 'bg-navy-600 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -111,7 +111,7 @@ export default function PartsPrice({ onBack }: PartsPriceProps) {
                 <p className="text-xs text-slate-500">Category: {item.parts?.category}</p>
                 <p className="text-xs text-slate-500">Device: {item.device_type}</p>
                 <div className="pt-2 border-t border-slate-200">
-                  <p className="text-2xl font-bold text-maroon-600">
+                  <p className="text-2xl font-bold text-navy-600">
                     ₱{item.price.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>

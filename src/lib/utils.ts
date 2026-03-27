@@ -1,34 +1,30 @@
-// Utility for numeric ticket IDs - timestamp-based for uniqueness
+// Utility for short numeric ticket IDs - 2 to 3 digits
 export const generateNumericTicketId = (): string => {
-  const now = new Date()
-  const year = now.getFullYear().toString().slice(-1) // Last digit of year
-  const month = (now.getMonth() + 1).toString().padStart(2, '0')
-  const day = now.getDate().toString().padStart(2, '0')
-  const seq = Math.floor(Math.random() * 900 + 100) // 100-999
-  return `${year}${month}${day}${seq}`
+  const id = Math.floor(Math.random() * 900 + 100) // 100-999 (3 digits)
+  return `${id}`
 }
 
-// Status color mapping
+// Status color mapping - new workflow
 export const STATUS_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
-  'pending': { 
+  'diagnosing': { 
     bg: 'bg-amber-50', 
     text: 'text-amber-700', 
     badge: 'bg-amber-100 text-amber-800'
   },
-  'in-progress': { 
+  'repairing': { 
     bg: 'bg-blue-50', 
     text: 'text-blue-700', 
     badge: 'bg-blue-100 text-blue-800'
   },
-  'completed': { 
+  'repaired': { 
     bg: 'bg-emerald-50', 
     text: 'text-emerald-700', 
     badge: 'bg-emerald-100 text-emerald-800'
   },
-  'on-hold': { 
-    bg: 'bg-rose-50', 
-    text: 'text-rose-700', 
-    badge: 'bg-rose-100 text-rose-800'
+  'received': { 
+    bg: 'bg-purple-50', 
+    text: 'text-purple-700', 
+    badge: 'bg-purple-100 text-purple-800'
   },
   'cancelled': { 
     bg: 'bg-slate-50', 

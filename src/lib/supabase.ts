@@ -14,12 +14,14 @@ export type Ticket = {
   device_model?: string
   issue_description: string
   assigned_technician: string
-  status: 'pending' | 'in-progress' | 'completed' | 'on-hold' | 'cancelled'
+  status: 'diagnosing' | 'repairing' | 'repaired' | 'received' | 'cancelled'
   created_at: string
   updated_at: string
   notes: string
   cost_estimate: number | null
   completion_date: string | null
+  received_by?: string
+  target_completion_date?: string | null
   parts?: any
   total_parts_cost?: number | null
   payment_status?: 'unpaid' | 'partial' | 'paid'

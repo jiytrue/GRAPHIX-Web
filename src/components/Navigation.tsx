@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, LogOut, Settings, Menu, X, Home } from 'lucide-react'
+import { Plus, LogOut, Settings, Menu, X, Home, ShoppingCart } from 'lucide-react'
 
 interface NavigationProps {
   onCreateClick: () => void
@@ -7,9 +7,10 @@ interface NavigationProps {
   user?: any
   onLogout?: () => void
   onAdminClick?: () => void
+  onOrdersClick?: () => void
 }
 
-export default function Navigation({ onCreateClick, onDashboardClick, user, onLogout, onAdminClick }: NavigationProps) {
+export default function Navigation({ onCreateClick, onDashboardClick, user, onLogout, onAdminClick, onOrdersClick }: NavigationProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
@@ -24,7 +25,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
           >
             <img src="/graphix-logo.png" alt="Graphix" className="w-10 h-10 object-contain" />
             <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-bold text-maroon-600">Graphix</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy-600">Graphix</h1>
               <p className="text-xs text-slate-500 font-medium tracking-wide">PHONE REPAIR</p>
             </div>
           </button>
@@ -47,16 +48,14 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
               New Ticket
             </button>
 
-
             {user && (
               <>
-
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-maroon-600 flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-navy-600 flex items-center justify-center text-white text-sm font-bold">
                       {user.name.charAt(0)}
                     </div>
                     <span className="text-sm font-medium text-slate-900 hidden lg:inline">{user.name}</span>
@@ -69,27 +68,34 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                         <p className="text-xs text-slate-500">{user.email}</p>
                         <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${
                           user.role === 'admin' 
-                            ? 'bg-maroon-100 text-maroon-800' 
+                            ? 'bg-navy-100 text-navy-800' 
                             : 'bg-blue-100 text-blue-800'
                         }`}>
                           {user.role === 'admin' ? 'Administrator' : 'Technician'}
                         </span>
                       </div>
 
-                      {user.role === 'admin' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              onAdminClick?.()
-                              setShowProfileMenu(false)
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
-                          >
-                            <Settings size={16} />
-                            Parts & Pricing
-                          </button>
-                        </>
-                      )}
+                      <button
+                        onClick={() => {
+                          onAdminClick?.()
+                          setShowProfileMenu(false)
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                      >
+                        <Settings size={16} />
+                        Parts & Pricing
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          onOrdersClick?.()
+                          setShowProfileMenu(false)
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                      >
+                        <ShoppingCart size={16} />
+                        Parts Orders
+                      </button>
 
                       <button
                         onClick={() => {
@@ -126,7 +132,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
             <div className="p-4 border-b border-slate-200 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <img src="/graphix-logo.png" alt="Graphix" className="w-8 h-8 object-contain" />
-                <span className="font-bold text-maroon-600">Graphix</span>
+                <span className="font-bold text-navy-600">Graphix</span>
               </div>
               <button onClick={() => setShowMobileMenu(false)} className="p-1 hover:bg-slate-100 rounded-lg">
                 <X size={20} className="text-slate-600" />
@@ -136,7 +142,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
             {user && (
               <div className="p-4 bg-slate-50 border-b border-slate-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-maroon-600 flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 rounded-full bg-navy-600 flex items-center justify-center text-white font-bold">
                     {user.name.charAt(0)}
                   </div>
                   <div>
@@ -145,7 +151,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                   </div>
                 </div>
                 <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-bold ${
-                  user.role === 'admin' ? 'bg-maroon-100 text-maroon-800' : 'bg-blue-100 text-blue-800'
+                  user.role === 'admin' ? 'bg-navy-100 text-navy-800' : 'bg-blue-100 text-blue-800'
                 }`}>
                   {user.role === 'admin' ? 'Administrator' : 'Technician'}
                 </span>
@@ -162,20 +168,25 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
               </button>
               <button
                 onClick={() => { onCreateClick(); setShowMobileMenu(false) }}
-                className="w-full text-left px-4 py-3 rounded-lg bg-maroon-600 text-white flex items-center gap-3 text-sm font-medium"
+                className="w-full text-left px-4 py-3 rounded-lg bg-navy-600 text-white flex items-center gap-3 text-sm font-medium"
               >
                 <Plus size={18} />
                 New Ticket
               </button>
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => { onAdminClick?.(); setShowMobileMenu(false) }}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3 text-sm font-medium text-slate-700"
-                >
-                  <Settings size={18} />
-                  Parts & Pricing
-                </button>
-              )}
+              <button
+                onClick={() => { onAdminClick?.(); setShowMobileMenu(false) }}
+                className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3 text-sm font-medium text-slate-700"
+              >
+                <Settings size={18} />
+                Parts & Pricing
+              </button>
+              <button
+                onClick={() => { onOrdersClick?.(); setShowMobileMenu(false) }}
+                className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3 text-sm font-medium text-slate-700"
+              >
+                <ShoppingCart size={18} />
+                Parts Orders
+              </button>
               <div className="divider my-2" />
               <button
                 onClick={() => { onLogout?.(); setShowMobileMenu(false) }}

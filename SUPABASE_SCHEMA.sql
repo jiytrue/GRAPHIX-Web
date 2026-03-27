@@ -62,7 +62,7 @@ CREATE TABLE tickets (
   device_model VARCHAR(100),
   issue_description TEXT NOT NULL,
   assigned_technician VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'completed', 'on-hold')),
+  status VARCHAR(50) DEFAULT 'diagnosing' CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'cancelled')),
   notes TEXT DEFAULT '',
   cost_estimate DECIMAL(10, 2),
   parts JSON,
@@ -70,18 +70,33 @@ CREATE TABLE tickets (
   payment_status VARCHAR(50) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid')),
   amount_paid DECIMAL(10, 2) DEFAULT 0,
   payment_method VARCHAR(50) CHECK (payment_method IN ('cash', 'gcash', 'maya', 'bank_transfer')),
+  received_by VARCHAR(255),
+  target_completion_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   completion_date TIMESTAMP WITH TIME ZONE
 );
 
+-- Create Parts Orders Table (technicians request, admins review)
+CREATE TABLE parts_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  part_name VARCHAR(255) NOT NULL,
+  device_type VARCHAR(100) NOT NULL,
+  requested_by VARCHAR(255) NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  notes TEXT,
+  admin_notes TEXT,
+  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'ordered', 'received', 'cancelled')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Insert Default Users (Admin and Technicians)
 INSERT INTO users (email, password, name, role, active) VALUES
-('admin@graphix.com', 'admin@graphix2026', 'Admin', 'admin', true),
-('jefford@graphix.com', 'tech123', 'Jefford Calvo', 'technician', true),
-('jhondel@graphix.com', 'tech123', 'Jhondel Virtudazo', 'technician', true),
-('mark@graphix.com', 'tech123', 'Mark Saludares', 'technician', true),
-('mohammad@graphix.com', 'tech123', 'Mohammad', 'technician', true)
+('admin@graphix', 'graphix1', 'Admin', 'admin', true),
+('jefford@graphix', 'graphix1', 'Jefford Calvo', 'technician', true),
+('jhondel@graphix', 'graphix1', 'Jhondel Virtudazo', 'technician', true),
+('mark@graphix', 'graphix1', 'Mark Saludares', 'technician', true)
 ON CONFLICT DO NOTHING;
 
 -- Insert Technicians linked to Users
@@ -118,6 +133,8 @@ CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
 CREATE INDEX IF NOT EXISTS idx_tickets_ticket_id ON tickets(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_parts_category ON parts(category);
 CREATE INDEX IF NOT EXISTS idx_parts_device_type ON parts(device_type);
+CREATE INDEX IF NOT EXISTS idx_parts_orders_status ON parts_orders(status);
+CREATE INDEX IF NOT EXISTS idx_parts_orders_requested_by ON parts_orders(requested_by);
 
 -- Enable RLS (Row Level Security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -125,6 +142,7 @@ ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE parts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE parts_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parts_orders ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "allow_all_read_users" ON users;
 DROP POLICY IF EXISTS "allow_all_insert_users" ON users;
@@ -137,6 +155,10 @@ DROP POLICY IF EXISTS "allow_all_read_parts" ON parts;
 DROP POLICY IF EXISTS "allow_all_read_parts_pricing" ON parts_pricing;
 DROP POLICY IF EXISTS "allow_admin_write_parts_pricing" ON parts_pricing;
 DROP POLICY IF EXISTS "allow_admin_delete_parts_pricing" ON parts_pricing;
+DROP POLICY IF EXISTS "allow_all_read_parts_orders" ON parts_orders;
+DROP POLICY IF EXISTS "allow_all_insert_parts_orders" ON parts_orders;
+DROP POLICY IF EXISTS "allow_all_update_parts_orders" ON parts_orders;
+DROP POLICY IF EXISTS "allow_all_delete_parts_orders" ON parts_orders;
 
 -- Create policies for open access (adjust for production)
 CREATE POLICY "allow_all_read_users" ON users FOR SELECT USING (true);
@@ -150,6 +172,10 @@ CREATE POLICY "allow_all_read_parts" ON parts FOR SELECT USING (true);
 CREATE POLICY "allow_all_read_parts_pricing" ON parts_pricing FOR SELECT USING (true);
 CREATE POLICY "allow_admin_write_parts_pricing" ON parts_pricing FOR INSERT WITH CHECK (true);
 CREATE POLICY "allow_admin_delete_parts_pricing" ON parts_pricing FOR DELETE USING (true);
+CREATE POLICY "allow_all_read_parts_orders" ON parts_orders FOR SELECT USING (true);
+CREATE POLICY "allow_all_insert_parts_orders" ON parts_orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "allow_all_update_parts_orders" ON parts_orders FOR UPDATE USING (true);
+CREATE POLICY "allow_all_delete_parts_orders" ON parts_orders FOR DELETE USING (true);
 
 -- Insert Sample Parts Pricing for iPhone (get admin user ID for created_by)
 WITH admin_user AS (SELECT id FROM users WHERE role = 'admin' LIMIT 1)
@@ -188,23 +214,38 @@ WHERE p.device_type = 'Android'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- MIGRATION: Run this on EXISTING databases to add missing columns
+-- MIGRATION: Run this on EXISTING databases to add missing columns/tables
 -- ============================================================
--- If your live Supabase DB was created without the payment columns,
--- run these ALTER TABLE statements in the Supabase SQL Editor:
+-- If your live Supabase DB was created before these updates,
+-- run these statements in the Supabase SQL Editor:
 --
--- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'unpaid';
--- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS amount_paid DECIMAL(10, 2) DEFAULT 0;
--- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);
--- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS total_parts_cost DECIMAL(10, 2);
--- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS parts JSON;
+-- Add received_by and target_completion_date to tickets:
+-- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS received_by VARCHAR(255);
+-- ALTER TABLE tickets ADD COLUMN IF NOT EXISTS target_completion_date DATE;
 --
--- To add the 'cancelled' status:
+-- Update status constraint to new workflow:
 -- ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_check;
--- ALTER TABLE tickets ADD CONSTRAINT tickets_status_check CHECK (status IN ('pending', 'in-progress', 'completed', 'on-hold', 'cancelled'));
+-- ALTER TABLE tickets ADD CONSTRAINT tickets_status_check CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'cancelled'));
 --
--- To allow ticket deletion:
--- DROP POLICY IF EXISTS "allow_all_delete_tickets" ON tickets;
--- CREATE POLICY "allow_all_delete_tickets" ON tickets FOR DELETE USING (true);
+-- Create parts_orders table:
+-- CREATE TABLE IF NOT EXISTS parts_orders (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   part_name VARCHAR(255) NOT NULL,
+--   device_type VARCHAR(100) NOT NULL,
+--   requested_by VARCHAR(255) NOT NULL,
+--   quantity INTEGER NOT NULL DEFAULT 1,
+--   notes TEXT,
+--   admin_notes TEXT,
+--   status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'ordered', 'received', 'cancelled')),
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+--   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- );
+--
+-- Enable RLS and policies for parts_orders:
+-- ALTER TABLE parts_orders ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "allow_all_read_parts_orders" ON parts_orders FOR SELECT USING (true);
+-- CREATE POLICY "allow_all_insert_parts_orders" ON parts_orders FOR INSERT WITH CHECK (true);
+-- CREATE POLICY "allow_all_update_parts_orders" ON parts_orders FOR UPDATE USING (true);
+-- CREATE POLICY "allow_all_delete_parts_orders" ON parts_orders FOR DELETE USING (true);
 -- ============================================================
 

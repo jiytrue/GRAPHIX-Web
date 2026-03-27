@@ -45,12 +45,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     }
   }
 
-  const handleDemoLogin = (role: 'admin' | 'technician') => {
-    const demoEmail = role === 'admin' ? 'admin@graphix.com' : 'jefford@graphix.com'
-    setEmail(demoEmail)
-    setPassword(role === 'admin' ? 'admin@graphix2026' : 'tech123')
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
@@ -106,30 +100,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-
-          {/* Demo Login Buttons */}
-          <div className="space-y-2 pt-4 border-t border-slate-200">
-            <p className="text-xs text-slate-600 text-center">Demo Accounts:</p>
-            <button
-              onClick={() => handleDemoLogin('admin')}
-              className="btn btn-secondary w-full text-sm"
-            >
-              Login as Admin
-            </button>
-            <button
-              onClick={() => handleDemoLogin('technician')}
-              className="btn btn-secondary w-full text-sm"
-            >
-              Login as Technician
-            </button>
-          </div>
-
-          {/* Info */}
-          <div className="bg-slate-50 p-4 rounded-lg text-xs text-slate-600 space-y-1">
-            <p className="font-medium text-slate-700">Demo Credentials:</p>
-            <p><strong>Admin:</strong> admin@graphix.com</p>
-            <p><strong>Tech:</strong> jefford@graphix.com</p>
-          </div>
         </div>
       </div>
     </div>

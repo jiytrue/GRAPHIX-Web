@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, Ticket } from '../lib/supabase'
-import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Play, CheckCircle2, Pause, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck } from 'lucide-react'
 import { STATUS_COLORS, PAYMENT_COLORS, formatPeso, formatRelativeTime } from '../lib/utils'
 
 interface TicketDetailProps {
@@ -64,7 +64,6 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
       if (!ticket) return
       setSaving(true)
 
-      // Build update data - only include fields that exist in the DB
       const updateData: Record<string, any> = {
         status: formData.status || ticket.status,
         assigned_technician: formData.assigned_technician || ticket.assigned_technician || null,
@@ -73,8 +72,6 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         updated_at: new Date().toISOString(),
       }
 
-      // Only include payment fields if the ticket already has them (meaning the columns exist)
-      // This prevents the "Could not find the 'amount_paid' column" error
       if ('payment_status' in ticket || formData.payment_status) {
         updateData.payment_status = formData.payment_status || ticket.payment_status || 'unpaid'
       }
@@ -84,9 +81,14 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
       if ('payment_method' in ticket || formData.payment_method) {
         updateData.payment_method = formData.payment_method || ticket.payment_method || null
       }
+      if ('received_by' in ticket || formData.received_by) {
+        updateData.received_by = formData.received_by || ticket.received_by || null
+      }
+      if ('target_completion_date' in ticket || formData.target_completion_date) {
+        updateData.target_completion_date = formData.target_completion_date || ticket.target_completion_date || null
+      }
 
-      // Set completion_date when status changes to completed
-      if (updateData.status === 'completed' && ticket.status !== 'completed') {
+      if (updateData.status === 'repaired' && ticket.status !== 'repaired') {
         updateData.completion_date = new Date().toISOString()
       }
 
@@ -97,7 +99,6 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
 
       if (error) throw error
       
-      // Refetch the ticket to sync state
       await fetchTicket()
       setEditing(false)
       showToast?.('Ticket updated successfully!', 'success')
@@ -143,7 +144,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         updated_at: new Date().toISOString(),
       }
 
-      if (newStatus === 'completed') {
+      if (newStatus === 'repaired') {
         updateData.completion_date = new Date().toISOString()
       }
 
@@ -156,9 +157,9 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
 
       await fetchTicket()
       const labels: Record<string, string> = {
-        'in-progress': 'Repair started!',
-        'completed': 'Marked as complete!',
-        'on-hold': 'Put on hold.',
+        'repairing': 'Repair started!',
+        'repaired': 'Marked as repaired!',
+        'received': 'Customer received device!',
         'cancelled': 'Ticket cancelled.',
       }
       showToast?.(labels[newStatus] || 'Status updated!', 'success')
@@ -182,12 +183,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
     return (
       <div className="card p-8 text-center">
         <p className="text-rose-600 font-medium">Ticket not found</p>
-        <button
-          onClick={onBack}
-          className="mt-4 btn btn-primary"
-        >
-          Back to Dashboard
-        </button>
+        <button onClick={onBack} className="mt-4 btn btn-primary">Back to Dashboard</button>
       </div>
     )
   }
@@ -196,7 +192,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
     <div className="max-w-4xl mx-auto animate-slide-in">
       <button
         onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
+        className="mb-8 flex items-center gap-2 text-navy-600 hover:text-navy-700 font-medium transition-colors"
       >
         <ArrowLeft size={20} />
         Back to Dashboard
@@ -207,7 +203,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         <div className="flex justify-between items-start pb-6 border-b border-slate-200">
           <div>
             <p className="text-sm font-medium text-slate-600 mb-2">TICKET</p>
-            <h1 className="text-4xl font-bold text-maroon-600">#{ticket.ticket_id}</h1>
+            <h1 className="text-4xl font-bold text-navy-600">#{ticket.ticket_id}</h1>
             <p className="text-slate-600 mt-2">
               Created {new Date(ticket.created_at).toLocaleDateString('en-US', { 
                 year: 'numeric', 
@@ -222,27 +218,18 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
             )}
           </div>
           <div className="flex gap-2 no-print flex-wrap justify-end">
-            <button
-              onClick={handlePrint}
-              className="btn btn-secondary flex items-center gap-2"
-            >
+            <button onClick={handlePrint} className="btn btn-secondary flex items-center gap-2">
               <Printer size={18} />
               Print
             </button>
             {!editing && (
-              <button
-                onClick={() => setEditing(true)}
-                className="btn btn-primary flex items-center gap-2"
-              >
+              <button onClick={() => setEditing(true)} className="btn btn-primary flex items-center gap-2">
                 <Edit3 size={18} />
                 Update Ticket
               </button>
             )}
             {user?.role === 'admin' && !editing && (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="btn btn-danger flex items-center gap-2"
-              >
+              <button onClick={() => setShowDeleteConfirm(true)} className="btn btn-danger flex items-center gap-2">
                 <Trash2 size={18} />
                 Delete
               </button>
@@ -251,48 +238,38 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         </div>
 
         {/* Quick Actions Bar */}
-        {!editing && ticket.status !== 'completed' && ticket.status !== 'cancelled' && (
+        {!editing && ticket.status !== 'received' && ticket.status !== 'cancelled' && (
           <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 no-print">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">⚡ Quick Actions</p>
             <div className="flex flex-wrap gap-3">
-              {ticket.status === 'pending' && (
+              {ticket.status === 'diagnosing' && (
                 <button
-                  onClick={() => handleQuickStatus('in-progress')}
+                  onClick={() => handleQuickStatus('repairing')}
                   disabled={quickActionLoading}
                   className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                 >
-                  <Play size={16} />
-                  Start Repair
+                  <Wrench size={16} />
+                  Start Repairing
                 </button>
               )}
-              {ticket.status === 'in-progress' && (
-                <>
-                  <button
-                    onClick={() => handleQuickStatus('completed')}
-                    disabled={quickActionLoading}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={16} />
-                    Mark Complete
-                  </button>
-                  <button
-                    onClick={() => handleQuickStatus('on-hold')}
-                    disabled={quickActionLoading}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                  >
-                    <Pause size={16} />
-                    Put on Hold
-                  </button>
-                </>
-              )}
-              {ticket.status === 'on-hold' && (
+              {ticket.status === 'repairing' && (
                 <button
-                  onClick={() => handleQuickStatus('in-progress')}
+                  onClick={() => handleQuickStatus('repaired')}
                   disabled={quickActionLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                 >
-                  <RotateCcw size={16} />
-                  Resume Repair
+                  <CheckCircle2 size={16} />
+                  Mark Repaired
+                </button>
+              )}
+              {ticket.status === 'repaired' && (
+                <button
+                  onClick={() => handleQuickStatus('received')}
+                  disabled={quickActionLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                >
+                  <PackageCheck size={16} />
+                  Customer Received
                 </button>
               )}
             </div>
@@ -342,32 +319,28 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
 
         <div className="divider" />
 
-        {/* Ticket Status */}
+        {/* Intake & Repair Info */}
         <div>
           <h2 className="text-lg font-bold text-slate-900 mb-4">Repair Status</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <p className="text-sm text-slate-600 font-medium mb-2">Status</p>
               {editing ? (
                 <select
                   value={formData.status || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value as Ticket['status'] })
-                  }
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Ticket['status'] })}
                   className="w-full"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="on-hold">On Hold</option>
-                  <option value="completed">Completed</option>
+                  <option value="diagnosing">Diagnosing</option>
+                  <option value="repairing">Repairing</option>
+                  <option value="repaired">Repaired</option>
+                  <option value="received">Received</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
               ) : (
-                <div className="inline-block">
-                  <span className={`badge ${STATUS_COLORS[ticket.status as keyof typeof STATUS_COLORS]?.badge || 'bg-slate-100 text-slate-800'}`}>
-                    {ticket.status.replace('-', ' ').toUpperCase()}
-                  </span>
-                </div>
+                <span className={`badge ${STATUS_COLORS[ticket.status]?.badge || 'bg-slate-100 text-slate-800'}`}>
+                  {ticket.status.toUpperCase()}
+                </span>
               )}
             </div>
             <div>
@@ -375,16 +348,12 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               {editing ? (
                 <select
                   value={formData.assigned_technician || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, assigned_technician: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, assigned_technician: e.target.value })}
                   className="w-full"
                 >
                   <option value="">Unassigned</option>
                   {technicians.map((tech) => (
-                    <option key={tech} value={tech}>
-                      {tech}
-                    </option>
+                    <option key={tech} value={tech}>{tech}</option>
                   ))}
                 </select>
               ) : (
@@ -392,23 +361,52 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               )}
             </div>
             <div>
-              <p className="text-sm text-slate-600 font-medium mb-2">Cost Estimate</p>
+              <p className="text-sm text-slate-600 font-medium mb-2">Received By</p>
               {editing ? (
-                <div className="flex items-center">
-                  <span className="mr-2 text-slate-900">₱</span>
-                  <input
-                    type="number"
-                    value={formData.cost_estimate !== undefined && formData.cost_estimate !== null ? formData.cost_estimate : ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cost_estimate: parseFloat(e.target.value) || null })
-                    }
-                    placeholder="Enter amount"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={formData.received_by || ''}
+                  onChange={(e) => setFormData({ ...formData, received_by: e.target.value })}
+                  className="w-full"
+                  placeholder="Name of person who received"
+                />
               ) : (
-                <p className="text-slate-900 font-medium">{ticket.cost_estimate ? formatPeso(ticket.cost_estimate) : 'Not set'}</p>
+                <p className="text-slate-900">{ticket.received_by || 'Not set'}</p>
               )}
             </div>
+            <div>
+              <p className="text-sm text-slate-600 font-medium mb-2">Target Completion</p>
+              {editing ? (
+                <input
+                  type="date"
+                  value={formData.target_completion_date || ''}
+                  onChange={(e) => setFormData({ ...formData, target_completion_date: e.target.value })}
+                  className="w-full"
+                />
+              ) : (
+                <p className="text-slate-900">
+                  {ticket.target_completion_date 
+                    ? new Date(ticket.target_completion_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+                    : 'Not set'}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-slate-600 font-medium mb-2">Cost Estimate</p>
+            {editing ? (
+              <div className="flex items-center max-w-xs">
+                <span className="mr-2 text-slate-900">₱</span>
+                <input
+                  type="number"
+                  value={formData.cost_estimate !== undefined && formData.cost_estimate !== null ? formData.cost_estimate : ''}
+                  onChange={(e) => setFormData({ ...formData, cost_estimate: parseFloat(e.target.value) || null })}
+                  placeholder="Enter amount"
+                />
+              </div>
+            ) : (
+              <p className="text-slate-900 font-medium">{ticket.cost_estimate ? formatPeso(ticket.cost_estimate) : 'Not set'}</p>
+            )}
           </div>
         </div>
 
@@ -423,9 +421,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               {editing ? (
                 <select
                   value={formData.payment_status || 'unpaid'}
-                  onChange={(e) =>
-                    setFormData({ ...formData, payment_status: e.target.value as 'unpaid' | 'partial' | 'paid' })
-                  }
+                  onChange={(e) => setFormData({ ...formData, payment_status: e.target.value as any })}
                   className="w-full"
                 >
                   <option value="unpaid">Unpaid</option>
@@ -433,11 +429,9 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                   <option value="paid">Paid</option>
                 </select>
               ) : (
-                <div className="inline-block">
-                  <span className={`badge ${PAYMENT_COLORS[ticket.payment_status as keyof typeof PAYMENT_COLORS]?.badge || 'bg-slate-100 text-slate-800'}`}>
-                    {ticket.payment_status?.replace('-', ' ') || 'unpaid'}
-                  </span>
-                </div>
+                <span className={`badge ${PAYMENT_COLORS[ticket.payment_status as string]?.badge || 'bg-slate-100 text-slate-800'}`}>
+                  {ticket.payment_status?.toUpperCase() || 'UNPAID'}
+                </span>
               )}
             </div>
             <div>
@@ -449,9 +443,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                     type="number"
                     step="0.01"
                     value={formData.amount_paid !== undefined ? formData.amount_paid : ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, amount_paid: parseFloat(e.target.value) || 0 })
-                    }
+                    onChange={(e) => setFormData({ ...formData, amount_paid: parseFloat(e.target.value) || 0 })}
                     placeholder="0.00"
                   />
                 </div>
@@ -464,12 +456,10 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               {editing ? (
                 <select
                   value={formData.payment_method || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'gcash' | 'maya' | 'bank_transfer' })
-                  }
+                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
                   className="w-full"
                 >
-                  <option value="">Select payment method...</option>
+                  <option value="">Select method...</option>
                   <option value="cash">Cash</option>
                   <option value="gcash">GCash</option>
                   <option value="maya">Maya</option>
@@ -515,10 +505,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button
-              onClick={() => {
-                setEditing(false)
-                setFormData(ticket)
-              }}
+              onClick={() => { setEditing(false); setFormData(ticket) }}
               className="btn btn-secondary flex items-center gap-2"
             >
               <X size={18} />
@@ -541,17 +528,8 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                 Are you sure you want to delete ticket <strong>#{ticket.ticket_id}</strong>? This action cannot be undone.
               </p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 btn btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex-1 btn btn-danger disabled:opacity-50"
-                >
+                <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 btn btn-secondary">Cancel</button>
+                <button onClick={handleDelete} disabled={deleting} className="flex-1 btn btn-danger disabled:opacity-50">
                   {deleting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
@@ -584,6 +562,12 @@ function TicketLabel({ ticket }: { ticket: Ticket }) {
           <div className="font-bold text-sm">Issue:</div>
           <div className="text-xs">{ticket.issue_description}</div>
         </div>
+        {ticket.received_by && (
+          <div>
+            <div className="font-bold text-sm">Received by:</div>
+            <div className="text-xs">{ticket.received_by}</div>
+          </div>
+        )}
       </div>
       <div>
         <div className="font-bold text-sm">Status:</div>

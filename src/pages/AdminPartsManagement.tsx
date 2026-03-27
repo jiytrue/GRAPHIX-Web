@@ -6,9 +6,11 @@ import { formatPeso } from '../lib/utils'
 
 interface AdminPartsManagementProps {
   onBack?: () => void
+  user?: any
 }
 
-export default function AdminPartsManagement({ onBack }: AdminPartsManagementProps) {
+export default function AdminPartsManagement({ onBack, user }: AdminPartsManagementProps) {
+  const isAdmin = user?.role === 'admin'
   const [parts, setParts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showPartForm, setShowPartForm] = useState(false)
@@ -215,7 +217,7 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
       {onBack && (
         <button
           onClick={onBack}
-          className="mb-6 flex items-center gap-2 text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
+          className="mb-6 flex items-center gap-2 text-navy-600 hover:text-navy-700 font-medium transition-colors"
         >
           <ArrowLeft size={20} />
           Back to Dashboard
@@ -225,25 +227,27 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
       <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Parts & Pricing</h1>
-          <p className="text-slate-600 mt-1">Manage repair parts and set prices (Admin Only)</p>
+          <p className="text-slate-600 mt-1">{isAdmin ? 'Manage repair parts and set prices' : 'View available parts and prices'}</p>
         </div>
-        <button
-          onClick={() => {
-            setShowPartForm(!showPartForm)
-            if (showPartForm) {
-              setFormData({ name: '', category: 'battery', device_type: 'iPhone', description: '' })
-              setEditingPartId(null)
-            }
-          }}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          {showPartForm ? 'Cancel' : 'Add Part'}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setShowPartForm(!showPartForm)
+              if (showPartForm) {
+                setFormData({ name: '', category: 'battery', device_type: 'iOS', description: '' })
+                setEditingPartId(null)
+              }
+            }}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus size={20} />
+            {showPartForm ? 'Cancel' : 'Add Part'}
+          </button>
+        )}
       </div>
 
-      {/* Add/Edit Part Form */}
-      {showPartForm && (
+      {/* Add/Edit Part Form (Admin only) */}
+      {isAdmin && showPartForm && (
         <div className="card p-6 mb-6">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Package size={20} />
@@ -323,7 +327,7 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
               onClick={() => setSelectedDeviceType(type)}
               className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
                 selectedDeviceType === type
-                  ? 'bg-maroon-600 text-white'
+                  ? 'bg-navy-600 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -347,7 +351,7 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
         Object.entries(groupedParts).map(([category, categoryParts]) => (
           <div key={category} className="mb-8">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-maroon-600" />
+              <span className="w-2 h-2 rounded-full bg-navy-600" />
               {category}
               <span className="text-sm font-normal text-slate-400">({categoryParts.length})</span>
             </h2>
@@ -363,36 +367,38 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
                         <p className="text-xs text-slate-400 mt-1">{part.description}</p>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEditPart(part)}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                        title="Edit part"
-                      >
-                        <Edit2 size={14} className="text-slate-500" />
-                      </button>
-                      <button
-                        onClick={() => handleDeletePart(part.id)}
-                        className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Delete part"
-                      >
-                        <Trash2 size={14} className="text-rose-500" />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditPart(part)}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="Edit part"
+                        >
+                          <Edit2 size={14} className="text-slate-500" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePart(part.id)}
+                          className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete part"
+                        >
+                          <Trash2 size={14} className="text-rose-500" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Prices */}
                   <div className="border-t border-slate-100 pt-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-bold text-slate-500 uppercase">Pricing</p>
-                      {editingPricePartId !== part.id && (
+                      {isAdmin && editingPricePartId !== part.id && (
                         <button
                           onClick={() => {
                             setEditingPricePartId(part.id)
                             const existingPrice = part.prices?.find((p: any) => p.device_type === part.device_type)
                             setPriceValue(existingPrice ? existingPrice.price.toString() : '')
                           }}
-                          className="text-xs text-maroon-600 font-medium hover:text-maroon-700 flex items-center gap-1"
+                          className="text-xs text-navy-600 font-medium hover:text-navy-700 flex items-center gap-1"
                         >
                           <DollarSign size={12} />
                           {part.prices?.length > 0 ? 'Edit Price' : 'Set Price'}
@@ -406,14 +412,16 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
                           <div key={price.id} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2">
                             <span className="text-xs text-slate-600">{price.device_type}</span>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-maroon-600">{formatPeso(price.price)}</span>
-                              <button
-                                onClick={() => handleDeletePrice(price.id)}
-                                className="text-rose-400 hover:text-rose-600 transition-colors"
-                                title="Remove price"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                              <span className="font-bold text-sm text-navy-600">{formatPeso(price.price)}</span>
+                              {isAdmin && (
+                                <button
+                                  onClick={() => handleDeletePrice(price.id)}
+                                  className="text-rose-400 hover:text-rose-600 transition-colors"
+                                  title="Remove price"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -422,8 +430,8 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
                       <p className="text-xs text-slate-400 italic">No price set</p>
                     )}
 
-                    {/* Inline Price Editor */}
-                    {editingPricePartId === part.id && (
+                    {/* Inline Price Editor (Admin only) */}
+                    {isAdmin && editingPricePartId === part.id && (
                       <div className="mt-2 flex gap-2 items-end">
                         <div className="flex-1">
                           <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
@@ -442,7 +450,7 @@ export default function AdminPartsManagement({ onBack }: AdminPartsManagementPro
                         <button
                           onClick={() => handleSetPrice(part.id, part.device_type)}
                           disabled={loading}
-                          className="px-3 py-2 bg-maroon-600 text-white rounded-lg text-xs font-medium hover:bg-maroon-700 disabled:opacity-50"
+                          className="px-3 py-2 bg-navy-600 text-white rounded-lg text-xs font-medium hover:bg-navy-700 disabled:opacity-50"
                         >
                           Save
                         </button>

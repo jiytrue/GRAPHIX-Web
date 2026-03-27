@@ -13,10 +13,12 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_phone: '',
-    device_type: 'iPhone',
+    device_type: 'iOS',
     device_model: '',
     issue_description: '',
     assigned_technician: '',
+    received_by: '',
+    target_completion_date: '',
   })
   const [selectedParts, setSelectedParts] = useState<string[]>([])
   const [parts, setParts] = useState<any[]>([])
@@ -98,10 +100,6 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     }
   }
 
-  const generateTicketId = (): string => {
-    return generateNumericTicketId()
-  }
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -110,7 +108,6 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     }))
 
     if (name === 'device_type') {
-      setFormData((prev) => ({ ...prev, device_model: '' }))
       setSelectedParts([])
       fetchParts()
     }
@@ -126,27 +123,34 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
 
     try {
       setLoading(true)
-      const ticketId = generateTicketId()
+      const ticketId = generateNumericTicketId()
       setGeneratedTicketId(ticketId)
 
-      const { error } = await supabase.from('tickets').insert([
-        {
-          ticket_id: ticketId,
-          customer_name: formData.customer_name,
-          customer_phone: formData.customer_phone,
-          device_type: formData.device_type,
-          device_model: formData.device_model,
-          issue_description: formData.issue_description,
-          assigned_technician: formData.assigned_technician || null,
-          status: 'pending',
-          notes: '',
-          cost_estimate: partsTotalCost > 0 ? partsTotalCost : null,
-          parts: selectedParts.length > 0 ? selectedParts : null,
-          total_parts_cost: partsTotalCost,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
+      const insertData: Record<string, any> = {
+        ticket_id: ticketId,
+        customer_name: formData.customer_name,
+        customer_phone: formData.customer_phone,
+        device_type: formData.device_type,
+        device_model: formData.device_model,
+        issue_description: formData.issue_description,
+        assigned_technician: formData.assigned_technician || null,
+        status: 'diagnosing',
+        notes: '',
+        cost_estimate: partsTotalCost > 0 ? partsTotalCost : null,
+        parts: selectedParts.length > 0 ? selectedParts : null,
+        total_parts_cost: partsTotalCost,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      if (formData.received_by) {
+        insertData.received_by = formData.received_by
+      }
+      if (formData.target_completion_date) {
+        insertData.target_completion_date = formData.target_completion_date
+      }
+
+      const { error } = await supabase.from('tickets').insert([insertData])
 
       if (error) throw error
       setSubmitSuccess(true)
@@ -173,9 +177,9 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
             <h2 className="text-3xl font-bold text-slate-900 mb-2">Ticket Created</h2>
             <p className="text-slate-600">Your repair ticket has been created successfully</p>
           </div>
-          <div className="bg-maroon-50 border border-maroon-200 p-6 rounded-xl space-y-2">
+          <div className="bg-navy-50 border border-navy-200 p-6 rounded-xl space-y-2">
             <p className="text-sm text-slate-600 font-medium">TICKET ID</p>
-            <p className="text-4xl font-bold text-maroon-600 font-mono tracking-wider">{generatedTicketId}</p>
+            <p className="text-4xl font-bold text-navy-600 font-mono tracking-wider">{generatedTicketId}</p>
             <p className="text-xs text-slate-500 mt-4">
               Print this ID and attach to the back of the phone
             </p>
@@ -203,7 +207,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     <div className="max-w-3xl mx-auto animate-slide-in">
       <button
         onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
+        className="mb-8 flex items-center gap-2 text-navy-600 hover:text-navy-700 font-medium transition-colors"
       >
         <ArrowLeft size={20} />
         Back
@@ -222,7 +226,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
-                  Full Name <span className="text-maroon-600">*</span>
+                  Full Name <span className="text-navy-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -230,12 +234,12 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                   value={formData.customer_name}
                   onChange={handleChange}
                   required
-                  placeholder="Juan Makabugto Panty"
+                  placeholder="Customer full name"
                 />
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
-                  Phone Number <span className="text-maroon-600">*</span>
+                  Phone Number <span className="text-navy-600">*</span>
                 </label>
                 <input
                   type="tel"
@@ -254,7 +258,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
           {/* Device Information */}
           <div>
             <h2 className="text-lg font-bold text-slate-900 mb-5">Device Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Device Type</label>
                 <select
@@ -268,23 +272,39 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">Device Model</label>
-                <select
+                <label className="block text-sm font-medium text-slate-700">
+                  Device Model <span className="text-navy-600">*</span>
+                </label>
+                <input
+                  type="text"
                   name="device_model"
                   value={formData.device_model}
                   onChange={handleChange}
                   required
-                >
-                  <option value="">Select Model</option>
-                  {(DEVICE_TYPES as any)[formData.device_type]?.map((model: string) => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
+                  placeholder="e.g., iPhone 15 Pro Max, Samsung S24"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="divider" />
+
+          {/* Intake Details */}
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 mb-5">Intake Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Received By</label>
+                <input
+                  type="text"
+                  name="received_by"
+                  value={formData.received_by}
+                  onChange={handleChange}
+                  placeholder="Name of person who received"
+                />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Assign Technician
-                </label>
+                <label className="block text-sm font-medium text-slate-700">Assign Technician</label>
                 <select
                   name="assigned_technician"
                   value={formData.assigned_technician}
@@ -292,11 +312,18 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                 >
                   <option value="">Unassigned</option>
                   {technicians.map((tech) => (
-                    <option key={tech} value={tech}>
-                      {tech}
-                    </option>
+                    <option key={tech} value={tech}>{tech}</option>
                   ))}
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Target Completion</label>
+                <input
+                  type="date"
+                  name="target_completion_date"
+                  value={formData.target_completion_date}
+                  onChange={handleChange}
+                />
               </div>
             </div>
           </div>
@@ -314,19 +341,19 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                       type="checkbox"
                       checked={selectedParts.includes(item.parts.id)}
                       onChange={() => handlePartToggle(item.parts.id)}
-                      className="w-4 h-4 text-maroon-600"
+                      className="w-4 h-4 text-navy-600"
                     />
                     <div className="flex-1">
                       <p className="font-medium text-slate-900">{item.parts.name}</p>
                       <p className="text-xs text-slate-500">{item.parts.category}</p>
                     </div>
-                    <p className="font-bold text-maroon-600">₱{item.price.toFixed(2)}</p>
+                    <p className="font-bold text-navy-600">₱{item.price.toFixed(2)}</p>
                   </label>
                 ))}
                 {partsTotalCost > 0 && (
-                  <div className="bg-maroon-50 p-4 rounded-lg border border-maroon-200">
+                  <div className="bg-navy-50 p-4 rounded-lg border border-navy-200">
                     <p className="text-sm text-slate-600">Parts Total Cost:</p>
-                    <p className="text-2xl font-bold text-maroon-600">₱{partsTotalCost.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-navy-600">₱{partsTotalCost.toFixed(2)}</p>
                   </div>
                 )}
               </div>
@@ -342,7 +369,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
             <h2 className="text-lg font-bold text-slate-900 mb-5">Issue Details</h2>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">
-                Describe the Issue <span className="text-maroon-600">*</span>
+                Describe the Issue <span className="text-navy-600">*</span>
               </label>
               <textarea
                 name="issue_description"
