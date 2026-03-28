@@ -22,6 +22,34 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
   const [editingPricePartId, setEditingPricePartId] = useState<string | null>(null)
   const [priceValue, setPriceValue] = useState('')
 
+  // Custom UI State
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading?: boolean;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setNotification({ message, type })
+  }
+
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, show: false }))
+
   const [formData, setFormData] = useState({
     name: '',
     category: 'other',
@@ -112,7 +140,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
              }])
           }
         }
-        alert('Part updated!')
+        showNotification('Part updated successfully!')
       } else {
         // Insert new part
         const { data: newPart, error: partError } = await supabase
@@ -132,7 +160,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
              created_by: user.id || null
            }])
         }
-        alert('Part added!')
+        showNotification('Part added successfully!')
       }
 
       setFormData({ name: '', category: 'other', device_type: 'iOS', description: '', price: '' })
@@ -141,28 +169,35 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
       fetchPartsWithPricing()
     } catch (error) {
       console.error('Error saving part:', error)
-      alert('Error saving part')
+      showNotification('Error saving part', 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDeletePart = async (id: string) => {
-    if (!confirm('Delete this part and all its prices?')) return
-
-    try {
-      setLoading(true)
-      const { error } = await supabase.from('parts').delete().eq('id', id)
-      if (error) throw error
-      setParts(parts.filter(p => p.id !== id))
-      alert('Part deleted!')
-    } catch (error) {
-      console.error('Error deleting part:', error)
-      alert('Error deleting part')
-      await fetchPartsWithPricing()
-    } finally {
-      setLoading(false)
-    }
+  const handleDeletePart = async (id: string, name: string) => {
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Part',
+      message: `Are you sure you want to delete "${name}"? This will also remove all its pricing history.`,
+      isLoading: false,
+      onConfirm: async () => {
+        try {
+          setConfirmDialog(prev => ({ ...prev, isLoading: true }))
+          const { error } = await supabase.from('parts').delete().eq('id', id)
+          
+          if (error) throw error
+          
+          setParts(prev => prev.filter(p => p.id !== id))
+          showNotification('Part deleted successfully!')
+          closeConfirm()
+        } catch (error) {
+          console.error('Error deleting part:', error)
+          showNotification('Failed to delete part. Please try again.', 'error')
+          closeConfirm()
+        }
+      }
+    })
   }
 
   const handleEditPart = (part: any) => {
@@ -215,25 +250,36 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
       setEditingPricePartId(null)
       setPriceValue('')
       fetchPartsWithPricing()
+      showNotification('Price updated!')
     } catch (error) {
       console.error('Error setting price:', error)
-      alert('Error setting price')
+      showNotification('Error setting price', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   const handleDeletePrice = async (priceId: string) => {
-    if (!confirm('Remove this price?')) return
-
-    try {
-      const { error } = await supabase.from('parts_pricing').delete().eq('id', priceId)
-      if (error) throw error
-      fetchPartsWithPricing()
-    } catch (error) {
-      console.error('Error deleting price:', error)
-      alert('Error deleting price')
-    }
+    setConfirmDialog({
+      show: true,
+      title: 'Remove Price',
+      message: 'Are you sure you want to remove this specific price entry?',
+      isLoading: false,
+      onConfirm: async () => {
+        try {
+          setConfirmDialog(prev => ({ ...prev, isLoading: true }))
+          const { error } = await supabase.from('parts_pricing').delete().eq('id', priceId)
+          if (error) throw error
+          fetchPartsWithPricing()
+          showNotification('Price removed!')
+          closeConfirm()
+        } catch (error) {
+          console.error('Error deleting price:', error)
+          showNotification('Error deleting price', 'error')
+          closeConfirm()
+        }
+      }
+    })
   }
 
   const deviceTypes = ['all', ...Object.keys(DEVICE_TYPES)]
@@ -402,7 +448,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
                       <Edit2 size={14} className="text-slate-500" />
                     </button>
                     <button
-                      onClick={() => handleDeletePart(part.id)}
+                      onClick={() => handleDeletePart(part.id, part.name)}
                       className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
                       title="Delete part"
                     >
@@ -490,6 +536,45 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {/* Custom Confirmation Dialog */}
+      {confirmDialog.show && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">{confirmDialog.title}</h3>
+              <p className="text-slate-600 leading-relaxed">{confirmDialog.message}</p>
+            </div>
+            <div className="bg-slate-50 p-4 flex gap-3 justify-end">
+              <button
+                onClick={closeConfirm}
+                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                disabled={confirmDialog.isLoading}
+                className="px-6 py-2 bg-maroon-600 hover:bg-maroon-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-maroon-600/20 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {confirmDialog.isLoading ? 'Processing...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Notification Toast */}
+      {notification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-5 duration-300">
+          <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${
+            notification.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 
+            notification.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+            'bg-emerald-50 border-emerald-100 text-emerald-700'
+          }`}>
+            <span className="text-sm font-bold">{notification.message}</span>
+          </div>
         </div>
       )}
     </div>

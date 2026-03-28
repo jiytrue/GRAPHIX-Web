@@ -174,9 +174,15 @@ CREATE POLICY "allow_all_insert_tickets" ON tickets FOR INSERT WITH CHECK (true)
 CREATE POLICY "allow_all_update_tickets" ON tickets FOR UPDATE USING (true);
 CREATE POLICY "allow_all_delete_tickets" ON tickets FOR DELETE USING (true);
 CREATE POLICY "allow_all_read_parts" ON parts FOR SELECT USING (true);
+CREATE POLICY "allow_all_insert_parts" ON parts FOR INSERT WITH CHECK (true);
+CREATE POLICY "allow_all_update_parts" ON parts FOR UPDATE USING (true);
+CREATE POLICY "allow_all_delete_parts" ON parts FOR DELETE USING (true);
+
 CREATE POLICY "allow_all_read_parts_pricing" ON parts_pricing FOR SELECT USING (true);
-CREATE POLICY "allow_admin_write_parts_pricing" ON parts_pricing FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_admin_delete_parts_pricing" ON parts_pricing FOR DELETE USING (true);
+CREATE POLICY "allow_all_insert_parts_pricing" ON parts_pricing FOR INSERT WITH CHECK (true);
+CREATE POLICY "allow_all_update_parts_pricing" ON parts_pricing FOR UPDATE USING (true);
+CREATE POLICY "allow_all_delete_parts_pricing" ON parts_pricing FOR DELETE USING (true);
+
 CREATE POLICY "allow_all_read_parts_orders" ON parts_orders FOR SELECT USING (true);
 CREATE POLICY "allow_all_insert_parts_orders" ON parts_orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "allow_all_update_parts_orders" ON parts_orders FOR UPDATE USING (true);
