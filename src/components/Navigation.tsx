@@ -16,17 +16,17 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
 
   return (
     <>
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs">
-        <div className="container mx-auto px-4 sm:px-6 py-4 max-w-7xl flex justify-between items-center">
+      <nav className="bg-slate-900 border-b border-white/5 sticky top-0 z-50 shadow-lg backdrop-blur-md bg-slate-900/95">
+        <div className="container mx-auto px-4 sm:px-6 py-3 max-w-7xl flex justify-between items-center">
           {/* Logo and Title - clickable to go home */}
           <button
             onClick={onDashboardClick}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            <img src="/graphix-logo.png" alt="Graphix" className="w-10 h-10 object-contain" />
-            <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-bold text-navy-600">Graphix</h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide">PHONE REPAIR</p>
+            <img src="/graphix-logo.png" alt="Graphix" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+            <div className="flex flex-col text-left">
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Graphix</h1>
+              <p className="text-[10px] text-maroon-400 font-black tracking-[0.2em] -mt-1 uppercase">Phone Repair</p>
             </div>
           </button>
           
@@ -34,7 +34,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
           <div className="hidden md:flex items-center gap-3">
             <button
               onClick={onDashboardClick}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors text-sm font-medium text-slate-700"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium text-white/80 border border-white/5"
             >
               <Home size={16} />
               Dashboard
@@ -53,12 +53,12 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-navy-600 flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-maroon-600 flex items-center justify-center text-white text-sm font-bold border border-white/10">
                       {user.name.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium text-slate-900 hidden lg:inline">{user.name}</span>
+                    <span className="text-sm font-medium text-white/90 hidden lg:inline">{user.name}</span>
                   </button>
 
                   {showProfileMenu && (
@@ -119,9 +119,9 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
           {/* Mobile Hamburger */}
           <button
             onClick={() => setShowMobileMenu(true)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
           >
-            <Menu size={24} className="text-slate-700" />
+            <Menu size={24} className="text-white/80" />
           </button>
         </div>
       </nav>
