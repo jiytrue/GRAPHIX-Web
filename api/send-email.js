@@ -11,7 +11,7 @@ const WORKER_EMAILS = {
   'Kent': 'aprilkentwagalazo@gmail.com',
   'Krissha': 'casino.krissha22@gmail.com',
   'Karin': 'karintudtud@gmail.com',
-  'Jetrho': 'jetrwu@gmail.com',
+  'Jetrho': 'graphix.repair@gmail.com',
 };
 
 const ALL_STAFF_EMAILS = [
@@ -22,8 +22,8 @@ const ALL_STAFF_EMAILS = [
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER || 'jetrwu@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'ywyz pydj dldw ejta',
+    user: process.env.GMAIL_USER || 'graphix.repair@gmail.com',
+    pass: process.env.GMAIL_APP_PASSWORD || 'hvbg ckkv ghir spbl',
   },
 });
 
@@ -71,7 +71,7 @@ module.exports = async (req, res) => {
     const techName = assignedTechnician || technicianName || 'Unassigned';
 
     const mailOptions = {
-      from: `"Graphix Repair System" <${process.env.GMAIL_USER || 'jetrwu@gmail.com'}>`,
+      from: `"Graphix Repair System" <${process.env.GMAIL_USER || 'graphix.repair@gmail.com'}>`,
       to: recipients,
       subject: subject,
       html: `
