@@ -1,6 +1,6 @@
 import { Ticket } from '../lib/supabase'
 import { Search, Wrench, CheckCircle, PackageCheck, XCircle, Smartphone, Play, CheckCircle2, Calendar, User } from 'lucide-react'
-import { STATUS_COLORS, formatRelativeTime } from '../lib/utils'
+import { formatRelativeTime } from '../lib/utils'
 
 interface TicketCardProps {
   ticket: Ticket
