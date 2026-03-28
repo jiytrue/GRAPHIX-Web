@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: a
 }
 
 export default function PartsOrders({ onBack, user }: PartsOrdersProps) {
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'worker'
   const [orders, setOrders] = useState<any[]>([])
   const [parts, setParts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

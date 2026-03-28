@@ -91,12 +91,16 @@ CREATE TABLE parts_orders (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Insert Default Users (Admin and Technicians)
+-- Insert Default Users (Admin, Technicians as admin, and Workers)
 INSERT INTO users (email, password, name, role, active) VALUES
 ('admin@graphix', 'graphix1', 'Admin', 'admin', true),
-('jefford@graphix', 'graphix1', 'Jefford Calvo', 'technician', true),
-('jhondel@graphix', 'graphix1', 'Jhondel Virtudazo', 'technician', true),
-('mark@graphix', 'graphix1', 'Mark Saludares', 'technician', true)
+('jefford@graphix', 'graphix1', 'Jefford Calvo', 'admin', true),
+('jhondel@graphix', 'graphix1', 'Jhondel Virtudazo', 'admin', true),
+('mark@graphix', 'graphix1', 'Mark Saludares', 'admin', true),
+('kent@graphix', 'graphix1', 'Kent', 'worker', true),
+('krissha@graphix', 'graphix1', 'Krissha', 'worker', true),
+('karin@graphix', 'graphix1', 'Karin', 'worker', true),
+('jetrho@graphix', 'graphix1', 'Jetrho', 'worker', true)
 ON CONFLICT DO NOTHING;
 
 -- Insert Technicians linked to Users

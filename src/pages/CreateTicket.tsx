@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { DEVICE_TYPES } from '../lib/constants'
 import { generateNumericTicketId } from '../lib/utils'
+import { sendTechnicianEmail, sendTicketCreatedEmail } from '../lib/email'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 
 interface CreateTicketProps {
@@ -19,6 +20,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     assigned_technician: '',
     received_by: '',
     target_completion_date: '',
+    amount_to_pay: '',
   })
   const [selectedParts, setSelectedParts] = useState<string[]>([])
   const [parts, setParts] = useState<any[]>([])
@@ -136,9 +138,11 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
         assigned_technician: formData.assigned_technician || null,
         status: 'diagnosing',
         notes: '',
-        cost_estimate: partsTotalCost > 0 ? partsTotalCost : null,
+        cost_estimate: formData.amount_to_pay ? parseFloat(formData.amount_to_pay) : (partsTotalCost > 0 ? partsTotalCost : null),
         parts: selectedParts.length > 0 ? selectedParts : null,
         total_parts_cost: partsTotalCost,
+        amount_paid: 0,
+        payment_status: 'unpaid',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -153,6 +157,30 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
       const { error } = await supabase.from('tickets').insert([insertData])
 
       if (error) throw error
+
+      // Send email notification to ALL staff about new ticket
+      sendTicketCreatedEmail({
+        ticketId: ticketId,
+        customerName: formData.customer_name,
+        deviceType: formData.device_type,
+        deviceModel: formData.device_model,
+        issueDescription: formData.issue_description,
+        assignedTechnician: formData.assigned_technician || undefined,
+        amountToPay: formData.amount_to_pay || undefined,
+      })
+
+      // Also send individual email to assigned technician
+      if (formData.assigned_technician) {
+        sendTechnicianEmail({
+          technicianName: formData.assigned_technician,
+          ticketId: ticketId,
+          customerName: formData.customer_name,
+          deviceType: formData.device_type,
+          deviceModel: formData.device_model,
+          issueDescription: formData.issue_description,
+        })
+      }
+
       setSubmitSuccess(true)
 
       setTimeout(() => {
@@ -273,7 +301,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">
-                  Device Model <span className="text-navy-600">*</span>
+                  Device Model <span className="text-maroon-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -323,6 +351,18 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                   name="target_completion_date"
                   value={formData.target_completion_date}
                   onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Amount to be Paid (₱)</label>
+                <input
+                  type="number"
+                  name="amount_to_pay"
+                  value={formData.amount_to_pay}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
                 />
               </div>
             </div>

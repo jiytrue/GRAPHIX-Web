@@ -10,7 +10,7 @@ interface AdminPartsManagementProps {
 }
 
 export default function AdminPartsManagement({ onBack, user }: AdminPartsManagementProps) {
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'worker'
   const [parts, setParts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showPartForm, setShowPartForm] = useState(false)

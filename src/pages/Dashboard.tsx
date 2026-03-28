@@ -10,7 +10,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onSelectTicket, showToast }: DashboardProps) {
-  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [allTickets, setAllTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [technicianFilter, setTechnicianFilter] = useState<string>('all')
@@ -18,31 +18,20 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
   const [technicians, setTechnicians] = useState<string[]>([])
 
   useEffect(() => {
-    fetchTickets()
+    fetchAllTickets()
     fetchTechnicians()
   }, [])
 
-  const fetchTickets = async (status?: string, tech?: string) => {
-    const filter = status || statusFilter
-    const techFilter = tech || technicianFilter
+  const fetchAllTickets = async () => {
     try {
       setLoading(true)
-      let query = supabase
+      const { data, error } = await supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (filter !== 'all') {
-        query = query.eq('status', filter)
-      }
-
-      if (techFilter !== 'all') {
-        query = query.eq('assigned_technician', techFilter)
-      }
-
-      const { data, error } = await query
       if (error) throw error
-      setTickets(data || [])
+      setAllTickets(data || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
     } finally {
@@ -63,46 +52,35 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
     }
   }
 
-  const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value)
-    fetchTickets(value, technicianFilter)
+  // Stats always computed from ALL tickets (unfiltered)
+  const stats = {
+    total: allTickets.length,
+    diagnosing: allTickets.filter((t) => t.status === 'diagnosing').length,
+    repairing: allTickets.filter((t) => t.status === 'repairing').length,
+    repaired: allTickets.filter((t) => t.status === 'repaired').length,
+    received: allTickets.filter((t) => t.status === 'received').length,
+    cancelled: allTickets.filter((t) => t.status === 'cancelled').length,
   }
 
-  const handleTechnicianFilterChange = (value: string) => {
-    setTechnicianFilter(value)
-    fetchTickets(statusFilter, value)
-  }
-
-  // Clickable stat card handler
-  const handleStatClick = (status: string) => {
-    setStatusFilter(status)
-    fetchTickets(status, technicianFilter)
-  }
-
-  const filteredTickets = tickets.filter(ticket => {
-    if (!searchTerm) return true
-    const term = searchTerm.toLowerCase()
-    return (
-      ticket.ticket_id.toLowerCase().includes(term) ||
-      ticket.customer_name.toLowerCase().includes(term) ||
-      ticket.customer_phone?.toLowerCase().includes(term) ||
-      ticket.device_model?.toLowerCase().includes(term) ||
-      ticket.device_type?.toLowerCase().includes(term)
-    )
-  })
-
-  const getStats = () => {
-    return {
-      total: tickets.length,
-      diagnosing: tickets.filter((t) => t.status === 'diagnosing').length,
-      repairing: tickets.filter((t) => t.status === 'repairing').length,
-      repaired: tickets.filter((t) => t.status === 'repaired').length,
-      received: tickets.filter((t) => t.status === 'received').length,
-      cancelled: tickets.filter((t) => t.status === 'cancelled').length,
+  // Filtered tickets computed locally from allTickets
+  const displayedTickets = allTickets.filter(ticket => {
+    // Status filter
+    if (statusFilter !== 'all' && ticket.status !== statusFilter) return false
+    // Technician filter
+    if (technicianFilter !== 'all' && ticket.assigned_technician !== technicianFilter) return false
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      return (
+        ticket.ticket_id.toLowerCase().includes(term) ||
+        ticket.customer_name.toLowerCase().includes(term) ||
+        ticket.customer_phone?.toLowerCase().includes(term) ||
+        ticket.device_model?.toLowerCase().includes(term) ||
+        ticket.device_type?.toLowerCase().includes(term)
+      )
     }
-  }
-
-  const stats = getStats()
+    return true
+  })
 
   const handleQuickAction = async (ticketId: string, newStatus: string) => {
     try {
@@ -124,7 +102,7 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         'received': 'Customer received!',
       }
       showToast?.(labels[newStatus] || 'Status updated!', 'success')
-      fetchTickets(statusFilter, technicianFilter)
+      fetchAllTickets()
     } catch (error) {
       showToast?.('Error updating status', 'error')
     }
@@ -146,7 +124,7 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         {statCards.map(card => (
           <button
             key={card.status}
-            onClick={() => handleStatClick(card.status)}
+            onClick={() => setStatusFilter(card.status)}
             className={`p-4 rounded-xl border transition-all text-left hover:shadow-md active:scale-95 ${card.color} ${
               statusFilter === card.status ? `ring-2 ${card.ring} shadow-md` : ''
             }`}
@@ -163,13 +141,13 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
           <StatusFilter
             label="Status:"
             value={statusFilter}
-            onChange={handleStatusFilterChange}
+            onChange={(value) => setStatusFilter(value)}
           />
           <div className="flex items-center gap-2 w-full md:w-auto">
             <label className="font-medium text-slate-700 text-sm whitespace-nowrap">Technician:</label>
             <select
               value={technicianFilter}
-              onChange={(e) => handleTechnicianFilterChange(e.target.value)}
+              onChange={(e) => setTechnicianFilter(e.target.value)}
               className="flex-1 md:flex-initial px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm"
             >
               <option value="all">All Technicians</option>
@@ -189,10 +167,10 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
             />
           </div>
         </div>
-        {searchTerm && (
+        {(statusFilter !== 'all' || technicianFilter !== 'all' || searchTerm) && (
           <div className="flex items-center gap-2">
             <p className="text-xs text-slate-500">
-              Showing <strong>{filteredTickets.length}</strong> of {tickets.length} tickets
+              Showing <strong>{displayedTickets.length}</strong> of {allTickets.length} tickets
             </p>
           </div>
         )}
@@ -203,23 +181,23 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="flex flex-col items-center gap-3">
-              <Loader className="animate-spin text-navy-600" size={36} />
+              <Loader className="animate-spin text-maroon-600" size={36} />
               <p className="text-slate-600 text-sm font-medium">Loading tickets...</p>
             </div>
           </div>
-        ) : tickets.length === 0 ? (
+        ) : allTickets.length === 0 ? (
           <div className="card p-12 text-center">
             <p className="text-slate-600 text-lg">No tickets found</p>
             <p className="text-slate-500 text-sm mt-2">Create your first ticket to get started</p>
           </div>
-        ) : filteredTickets.length === 0 ? (
+        ) : displayedTickets.length === 0 ? (
           <div className="card p-12 text-center">
             <p className="text-slate-600 text-lg">No matching tickets</p>
             <p className="text-slate-500 text-sm mt-2">Try a different search term or filter</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredTickets.map((ticket) => (
+            {displayedTickets.map((ticket) => (
               <TicketCard
                 key={ticket.id}
                 ticket={ticket}

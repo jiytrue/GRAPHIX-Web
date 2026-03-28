@@ -67,11 +67,13 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                         <p className="text-sm font-medium text-slate-900">{user.name}</p>
                         <p className="text-xs text-slate-500">{user.email}</p>
                         <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${
-                          user.role === 'admin' 
-                            ? 'bg-navy-100 text-navy-800' 
-                            : 'bg-blue-100 text-blue-800'
+                          user.role === 'technician'
+                            ? 'bg-blue-100 text-blue-800'
+                            : user.role === 'worker'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-maroon-100 text-maroon-800'
                         }`}>
-                          {user.role === 'admin' ? 'Administrator' : 'Technician'}
+                          {user.role === 'admin' ? 'Administrator' : user.role === 'worker' ? 'Worker' : 'Technician'}
                         </span>
                       </div>
 
@@ -151,9 +153,9 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                   </div>
                 </div>
                 <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-bold ${
-                  user.role === 'admin' ? 'bg-navy-100 text-navy-800' : 'bg-blue-100 text-blue-800'
+                  user.role === 'technician' ? 'bg-blue-100 text-blue-800' : user.role === 'worker' ? 'bg-emerald-100 text-emerald-800' : 'bg-maroon-100 text-maroon-800'
                 }`}>
-                  {user.role === 'admin' ? 'Administrator' : 'Technician'}
+                  {user.role === 'admin' ? 'Administrator' : user.role === 'worker' ? 'Worker' : 'Technician'}
                 </span>
               </div>
             )}
@@ -168,7 +170,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
               </button>
               <button
                 onClick={() => { onCreateClick(); setShowMobileMenu(false) }}
-                className="w-full text-left px-4 py-3 rounded-lg bg-navy-600 text-white flex items-center gap-3 text-sm font-medium"
+                className="w-full text-left px-4 py-3 rounded-lg bg-maroon-600 text-white flex items-center gap-3 text-sm font-medium"
               >
                 <Plus size={18} />
                 New Ticket

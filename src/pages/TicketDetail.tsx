@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase, Ticket } from '../lib/supabase'
 import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck } from 'lucide-react'
 import { STATUS_COLORS, PAYMENT_COLORS, formatPeso, formatRelativeTime } from '../lib/utils'
+import { sendTechnicianEmail } from '../lib/email'
 
 interface TicketDetailProps {
   ticketId: string
@@ -98,7 +99,21 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         .eq('id', ticketId)
 
       if (error) throw error
-      
+
+      // Send email if technician was changed or newly assigned
+      const newTech = updateData.assigned_technician
+      const oldTech = ticket.assigned_technician
+      if (newTech && newTech !== oldTech) {
+        sendTechnicianEmail({
+          technicianName: newTech,
+          ticketId: ticket.ticket_id,
+          customerName: ticket.customer_name,
+          deviceType: ticket.device_type,
+          deviceModel: ticket.device_model,
+          issueDescription: ticket.issue_description,
+        })
+      }
+
       await fetchTicket()
       setEditing(false)
       showToast?.('Ticket updated successfully!', 'success')
@@ -228,7 +243,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                 Update Ticket
               </button>
             )}
-            {user?.role === 'admin' && !editing && (
+            {(user?.role === 'admin' || user?.role === 'worker') && !editing && (
               <button onClick={() => setShowDeleteConfirm(true)} className="btn btn-danger flex items-center gap-2">
                 <Trash2 size={18} />
                 Delete
