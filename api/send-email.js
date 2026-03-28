@@ -12,6 +12,7 @@ const WORKER_EMAILS = {
   'Krissha': 'casino.krissha22@gmail.com',
   'Karin': 'karintudtud@gmail.com',
   'Jetrho': 'graphix.repair@gmail.com',
+  'Ailene': 'ailenecalvo01@gmail.com',
 };
 
 const ALL_STAFF_EMAILS = [

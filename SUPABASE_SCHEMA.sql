@@ -100,7 +100,8 @@ INSERT INTO users (email, password, name, role, active) VALUES
 ('kent@graphix', 'graphix1', 'Kent', 'worker', true),
 ('krissha@graphix', 'graphix1', 'Krissha', 'worker', true),
 ('karin@graphix', 'graphix1', 'Karin', 'worker', true),
-('jetrho@graphix', 'graphix1', 'Jetrho', 'worker', true)
+('jetrho@graphix', 'graphix1', 'Jetrho', 'worker', true),
+('ailene@graphix', 'graphix1', 'Ailene', 'worker', true)
 ON CONFLICT DO NOTHING;
 
 -- Insert Technicians linked to Users
