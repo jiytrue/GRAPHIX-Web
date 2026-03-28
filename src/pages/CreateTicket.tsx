@@ -57,7 +57,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     try {
       const { data, error } = await supabase
         .from('parts_pricing')
-        .select('parts(id, name, category), price, device_type')
+        .select('parts(id, name), price, device_type')
         .eq('device_type', formData.device_type)
         .order('price', { ascending: true })
 
@@ -385,7 +385,6 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
                     />
                     <div className="flex-1">
                       <p className="font-medium text-slate-900">{item.parts.name}</p>
-                      <p className="text-xs text-slate-500">{item.parts.category}</p>
                     </div>
                     <p className="font-bold text-navy-600">₱{item.price.toFixed(2)}</p>
                   </label>

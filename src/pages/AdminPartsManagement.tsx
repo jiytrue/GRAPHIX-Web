@@ -24,9 +24,10 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
 
   const [formData, setFormData] = useState({
     name: '',
-    category: 'battery',
-    device_type: 'iPhone',
+    category: 'other',
+    device_type: 'iOS',
     description: '',
+    price: '',
   })
 
   useEffect(() => {
@@ -70,32 +71,71 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
   const handleAddPart = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.category || !formData.device_type) {
+    if (!formData.name || !formData.device_type) {
       alert('Please fill all required fields')
       return
     }
 
     try {
       setLoading(true)
+      const user = JSON.parse(localStorage.getItem('graphix_user') || '{}')
+      
+      const partData = {
+        name: formData.name,
+        category: 'other', // hardcoded to bypass DB constraint
+        device_type: formData.device_type,
+        description: formData.description
+      }
 
       if (editingPartId) {
-        const { error } = await supabase
+        // Update existing part
+        const { error: partError } = await supabase
           .from('parts')
-          .update(formData)
+          .update(partData)
           .eq('id', editingPartId)
 
-        if (error) throw error
+        if (partError) throw partError
+
+        // Process price if provided
+        if (formData.price && parseFloat(formData.price) > 0) {
+          const existingPrices = parts.find(p => p.id === editingPartId)?.prices || []
+          const existingDevicePrice = existingPrices.find((p: any) => p.device_type === formData.device_type)
+
+          if (existingDevicePrice) {
+             await supabase.from('parts_pricing').update({ price: parseFloat(formData.price) }).eq('id', existingDevicePrice.id)
+          } else {
+             await supabase.from('parts_pricing').insert([{
+               part_id: editingPartId,
+               price: parseFloat(formData.price),
+               device_type: formData.device_type,
+               created_by: user.id || null
+             }])
+          }
+        }
         alert('Part updated!')
       } else {
-        const { error } = await supabase
+        // Insert new part
+        const { data: newPart, error: partError } = await supabase
           .from('parts')
-          .insert([formData])
+          .insert([partData])
+          .select()
+          .single()
 
-        if (error) throw error
+        if (partError) throw partError
+
+        // Insert new price if provided
+        if (formData.price && parseFloat(formData.price) > 0 && newPart) {
+           await supabase.from('parts_pricing').insert([{
+             part_id: newPart.id,
+             price: parseFloat(formData.price),
+             device_type: formData.device_type,
+             created_by: user.id || null
+           }])
+        }
         alert('Part added!')
       }
 
-      setFormData({ name: '', category: 'battery', device_type: 'iPhone', description: '' })
+      setFormData({ name: '', category: 'other', device_type: 'iOS', description: '', price: '' })
       setEditingPartId(null)
       setShowPartForm(false)
       fetchPartsWithPricing()
@@ -126,11 +166,13 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
   }
 
   const handleEditPart = (part: any) => {
+    const partPrice = part.prices?.find((p: any) => p.device_type === part.device_type)?.price || ''
     setFormData({
       name: part.name,
-      category: part.category,
+      category: 'other',
       device_type: part.device_type,
       description: part.description || '',
+      price: partPrice.toString()
     })
     setEditingPartId(part.id)
     setShowPartForm(true)
@@ -197,8 +239,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
   const deviceTypes = ['all', ...Object.keys(DEVICE_TYPES)]
 
   const filteredParts = parts.filter(part => {
-    const matchesSearch = part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = part.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesDevice = selectedDeviceType === 'all' || part.device_type === selectedDeviceType
     return matchesSearch && matchesDevice
   })
@@ -234,7 +275,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
             onClick={() => {
               setShowPartForm(!showPartForm)
               if (showPartForm) {
-                setFormData({ name: '', category: 'battery', device_type: 'iOS', description: '' })
+                setFormData({ name: '', category: 'other', device_type: 'iOS', description: '', price: '' })
                 setEditingPartId(null)
               }
             }}
@@ -266,18 +307,6 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Category *</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                {PART_CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Device Type *</label>
               <select
                 value={formData.device_type}
@@ -287,6 +316,17 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Price (₱)</label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                placeholder="0.00"
+                step="0.01"
+              />
             </div>
 
             <div>
@@ -314,7 +354,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
           <Search className="text-slate-400 flex-shrink-0" size={20} />
           <input
             type="text"
-            placeholder="Search parts by name or category..."
+            placeholder="Search parts by name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm"
@@ -327,7 +367,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
               onClick={() => setSelectedDeviceType(type)}
               className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all ${
                 selectedDeviceType === type
-                  ? 'bg-navy-600 text-white'
+                  ? 'bg-maroon-600 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -337,137 +377,128 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
         </div>
       </div>
 
-      {/* Parts grouped by category */}
+      {/* Parts Grid */}
       {loading ? (
         <div className="card p-8 text-center">
           <p className="text-slate-600">Loading parts...</p>
         </div>
-      ) : Object.keys(groupedParts).length === 0 ? (
+      ) : filteredParts.length === 0 ? (
         <div className="card p-8 text-center">
           <Package className="mx-auto text-slate-400 mb-3" size={40} />
           <p className="text-slate-600">No parts found</p>
         </div>
       ) : (
-        Object.entries(groupedParts).map(([category, categoryParts]) => (
-          <div key={category} className="mb-8">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-navy-600" />
-              {category}
-              <span className="text-sm font-normal text-slate-400">({categoryParts.length})</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryParts.map((part: any) => (
-                <div key={part.id} className="card p-5 space-y-3">
-                  {/* Part Header */}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-slate-900">{part.name}</h3>
-                      <p className="text-xs text-slate-500">{part.device_type}</p>
-                      {part.description && (
-                        <p className="text-xs text-slate-400 mt-1">{part.description}</p>
-                      )}
-                    </div>
-                    {isAdmin && (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleEditPart(part)}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                          title="Edit part"
-                        >
-                          <Edit2 size={14} className="text-slate-500" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePart(part.id)}
-                          className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete part"
-                        >
-                          <Trash2 size={14} className="text-rose-500" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Prices */}
-                  <div className="border-t border-slate-100 pt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-bold text-slate-500 uppercase">Pricing</p>
-                      {isAdmin && editingPricePartId !== part.id && (
-                        <button
-                          onClick={() => {
-                            setEditingPricePartId(part.id)
-                            const existingPrice = part.prices?.find((p: any) => p.device_type === part.device_type)
-                            setPriceValue(existingPrice ? existingPrice.price.toString() : '')
-                          }}
-                          className="text-xs text-navy-600 font-medium hover:text-navy-700 flex items-center gap-1"
-                        >
-                          <DollarSign size={12} />
-                          {part.prices?.length > 0 ? 'Edit Price' : 'Set Price'}
-                        </button>
-                      )}
-                    </div>
-
-                    {part.prices?.length > 0 ? (
-                      <div className="space-y-1">
-                        {part.prices.map((price: any) => (
-                          <div key={price.id} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2">
-                            <span className="text-xs text-slate-600">{price.device_type}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-navy-600">{formatPeso(price.price)}</span>
-                              {isAdmin && (
-                                <button
-                                  onClick={() => handleDeletePrice(price.id)}
-                                  className="text-rose-400 hover:text-rose-600 transition-colors"
-                                  title="Remove price"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic">No price set</p>
-                    )}
-
-                    {/* Inline Price Editor (Admin only) */}
-                    {isAdmin && editingPricePartId === part.id && (
-                      <div className="mt-2 flex gap-2 items-end">
-                        <div className="flex-1">
-                          <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
-                            <span className="px-2 text-sm text-slate-500 bg-slate-50 py-2">₱</span>
-                            <input
-                              type="number"
-                              value={priceValue}
-                              onChange={(e) => setPriceValue(e.target.value)}
-                              placeholder="0.00"
-                              step="0.01"
-                              className="flex-1 px-2 py-2 text-sm border-0 focus:ring-0"
-                              style={{ border: 'none', outline: 'none' }}
-                            />
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleSetPrice(part.id, part.device_type)}
-                          disabled={loading}
-                          className="px-3 py-2 bg-navy-600 text-white rounded-lg text-xs font-medium hover:bg-navy-700 disabled:opacity-50"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => { setEditingPricePartId(null); setPriceValue('') }}
-                          className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-200"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {filteredParts.map((part: any) => (
+            <div key={part.id} className="card p-5 space-y-3">
+              {/* Part Header */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-slate-900">{part.name}</h3>
+                  <p className="text-xs text-slate-500">{part.device_type}</p>
+                  {part.description && (
+                    <p className="text-xs text-slate-400 mt-1">{part.description}</p>
+                  )}
                 </div>
-              ))}
+                {isAdmin && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditPart(part)}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="Edit part"
+                    >
+                      <Edit2 size={14} className="text-slate-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDeletePart(part.id)}
+                      className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Delete part"
+                    >
+                      <Trash2 size={14} className="text-rose-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Prices */}
+              <div className="border-t border-slate-100 pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Pricing</p>
+                  {isAdmin && editingPricePartId !== part.id && (
+                    <button
+                      onClick={() => {
+                        setEditingPricePartId(part.id)
+                        const existingPrice = part.prices?.find((p: any) => p.device_type === part.device_type)
+                        setPriceValue(existingPrice ? existingPrice.price.toString() : '')
+                      }}
+                      className="text-xs text-maroon-600 font-medium hover:text-maroon-700 flex items-center gap-1"
+                    >
+                      <DollarSign size={12} />
+                      {part.prices?.length > 0 ? 'Edit Price' : 'Set Price'}
+                    </button>
+                  )}
+                </div>
+
+                {part.prices?.length > 0 ? (
+                  <div className="space-y-1">
+                    {part.prices.map((price: any) => (
+                      <div key={price.id} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2">
+                        <span className="text-xs text-slate-600">{price.device_type}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-maroon-600">{formatPeso(price.price)}</span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeletePrice(price.id)}
+                              className="text-rose-400 hover:text-rose-600 transition-colors"
+                              title="Remove price"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No price set</p>
+                )}
+
+                {/* Inline Price Editor (Admin only) */}
+                {isAdmin && editingPricePartId === part.id && (
+                  <div className="mt-2 flex gap-2 items-end">
+                    <div className="flex-1">
+                      <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+                        <span className="px-2 text-sm text-slate-500 bg-slate-50 py-2">₱</span>
+                        <input
+                          type="number"
+                          value={priceValue}
+                          onChange={(e) => setPriceValue(e.target.value)}
+                          placeholder="0.00"
+                          step="0.01"
+                          className="flex-1 px-2 py-2 text-sm border-0 focus:ring-0"
+                          style={{ border: 'none', outline: 'none' }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleSetPrice(part.id, part.device_type)}
+                      disabled={loading}
+                      className="px-3 py-2 bg-maroon-600 text-white rounded-lg text-xs font-medium hover:bg-maroon-700 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditingPricePartId(null); setPriceValue('') }}
+                      className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   )
