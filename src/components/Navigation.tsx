@@ -16,17 +16,19 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
 
   return (
     <>
-      <nav className="bg-slate-900 border-b border-white/5 sticky top-0 z-50 shadow-lg backdrop-blur-md bg-slate-900/95">
+      <nav className="bg-maroon-600 border-b border-maroon-700 sticky top-0 z-50 shadow-md">
         <div className="container mx-auto px-4 sm:px-6 py-3 max-w-7xl flex justify-between items-center">
           {/* Logo and Title - clickable to go home */}
           <button
             onClick={onDashboardClick}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            <img src="/graphix-logo.png" alt="Graphix" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+            <div className="p-1 bg-white rounded-xl shadow-sm border border-maroon-100 flex items-center justify-center">
+              <img src="/graphix-logo.png" alt="Graphix" className="w-8 h-8 object-contain" />
+            </div>
             <div className="flex flex-col text-left">
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Graphix</h1>
-              <p className="text-[10px] text-maroon-400 font-black tracking-[0.2em] -mt-1 uppercase">Phone Repair</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-none">Graphix</h1>
+              <p className="text-[10px] text-maroon-100 font-black tracking-[0.2em] mt-0.5 uppercase">Phone Repair</p>
             </div>
           </button>
           
@@ -42,7 +44,7 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
 
             <button
               onClick={onCreateClick}
-              className="btn btn-primary group"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-maroon-600 hover:bg-maroon-50 transition-all font-bold text-sm shadow-md active:scale-95 group border border-white"
             >
               <Plus size={18} className="group-hover:rotate-90 transition-transform" />
               New Ticket
@@ -53,12 +55,12 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
                   >
-                    <div className="w-8 h-8 rounded-full bg-maroon-600 flex items-center justify-center text-white text-sm font-bold border border-white/10">
+                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-maroon-600 text-sm font-bold shadow-sm shadow-maroon-900/10">
                       {user.name.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium text-white/90 hidden lg:inline">{user.name}</span>
+                    <span className="text-sm font-bold text-white hidden lg:inline">{user.name}</span>
                   </button>
 
                   {showProfileMenu && (
@@ -170,9 +172,11 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
               </button>
               <button
                 onClick={() => { onCreateClick(); setShowMobileMenu(false) }}
-                className="w-full text-left px-4 py-3 rounded-lg bg-maroon-600 text-white flex items-center gap-3 text-sm font-medium"
+                className="w-full text-left px-4 py-3 rounded-lg bg-white text-maroon-600 shadow-md border border-white flex items-center gap-3 text-sm font-bold active:scale-95 transition-all"
               >
-                <Plus size={18} />
+                <div className="w-8 h-8 bg-maroon-50 rounded-lg flex items-center justify-center">
+                  <Plus size={20} className="text-maroon-600" />
+                </div>
                 New Ticket
               </button>
               <button
