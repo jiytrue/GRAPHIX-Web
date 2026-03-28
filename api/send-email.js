@@ -13,6 +13,7 @@ const WORKER_EMAILS = {
   'Karin': 'karintudtud@gmail.com',
   'Jetrho': 'graphix.repair@gmail.com',
   'Ailene': 'ailenecalvo01@gmail.com',
+  'GSaludares': 'gsaludares27@gmail.com',
 };
 
 const ALL_STAFF_EMAILS = [
