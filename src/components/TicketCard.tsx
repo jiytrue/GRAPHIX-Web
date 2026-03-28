@@ -36,22 +36,22 @@ export default function TicketCard({ ticket, onClick, onQuickAction }: TicketCar
       onClick={onClick}
       className="card card-hover group space-y-3 p-5 animate-slide-in"
     >
-      {/* Header: Ticket ID + Status */}
-      <div className="flex justify-between items-start gap-3">
+      {/* Header Box: Ticket ID, Customer info and Status */}
+      <div className="-mx-5 -mt-5 p-4 bg-maroon-600 rounded-t-xl mb-3 flex justify-between items-start gap-3 shadow-sm">
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-900 text-lg truncate">#{ticket.ticket_id}</p>
-          <p className="text-sm font-medium text-slate-800 truncate mt-1">{ticket.customer_name}</p>
-          <p className="text-xs text-slate-500">{ticket.customer_phone}</p>
+          <p className="font-bold text-white text-lg leading-none tracking-tight">#{ticket.ticket_id}</p>
+          <p className="text-sm font-bold text-maroon-50 truncate mt-1">{ticket.customer_name}</p>
+          <p className="text-xs text-maroon-200 mt-0.5">{ticket.customer_phone}</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {getStatusIcon(ticket.status)}
-          <span className={`badge ${STATUS_COLORS[ticket.status]?.badge || 'bg-slate-100 text-slate-800'} text-xs`}>
-            {ticket.status}
-          </span>
+          <div className="p-1 px-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/20 flex items-center gap-2">
+            {getStatusIcon(ticket.status)}
+            <span className="text-[10px] font-black uppercase text-white">
+              {ticket.status}
+            </span>
+          </div>
         </div>
       </div>
-
-      <div className="divider" />
 
       {/* Device + Issue */}
       <div className="space-y-1.5">

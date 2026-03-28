@@ -142,18 +142,18 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
             </div>
 
             {user && (
-              <div className="p-4 bg-slate-50 border-b border-slate-200">
+              <div className="p-4 bg-maroon-600 border-b border-maroon-700">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-navy-600 flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold border border-white/30">
                     {user.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-sm text-slate-900">{user.name}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="font-bold text-sm text-white">{user.name}</p>
+                    <p className="text-xs text-maroon-100">{user.email}</p>
                   </div>
                 </div>
                 <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-bold ${
-                  user.role === 'technician' ? 'bg-blue-100 text-blue-800' : user.role === 'worker' ? 'bg-emerald-100 text-emerald-800' : 'bg-maroon-100 text-maroon-800'
+                  user.role === 'technician' ? 'bg-blue-500/20 text-blue-50' : user.role === 'worker' ? 'bg-emerald-500/20 text-emerald-50' : 'bg-white/20 text-white'
                 }`}>
                   {user.role === 'admin' ? 'Administrator' : user.role === 'worker' ? 'Worker' : 'Technician'}
                 </span>
