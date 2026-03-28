@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Plus, Trash2, Edit2, Search, ArrowLeft, DollarSign, Package } from 'lucide-react'
-import { DEVICE_TYPES, PART_CATEGORIES } from '../lib/constants'
+import { DEVICE_TYPES } from '../lib/constants'
 import { formatPeso } from '../lib/utils'
 
 interface AdminPartsManagementProps {
@@ -244,15 +244,7 @@ export default function AdminPartsManagement({ onBack, user }: AdminPartsManagem
     return matchesSearch && matchesDevice
   })
 
-  // Group by category for better organization
-  const groupedParts = PART_CATEGORIES.reduce((groups: Record<string, any[]>, cat) => {
-    const matching = filteredParts.filter(p => p.category === cat.value)
-    if (matching.length > 0) {
-      groups[cat.label] = matching
-    }
-    return groups
-  }, {})
-
+  // No longer grouping by category
   return (
     <div className="max-w-6xl mx-auto animate-slide-in">
       {onBack && (
