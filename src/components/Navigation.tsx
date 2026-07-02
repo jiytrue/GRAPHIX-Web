@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, LogOut, Settings, Menu, X, Home, ShoppingCart } from 'lucide-react'
+import { Plus, LogOut, Settings, Menu, X, Home, ShoppingCart, Monitor } from 'lucide-react'
 
 interface NavigationProps {
   onCreateClick: () => void
@@ -8,9 +8,10 @@ interface NavigationProps {
   onLogout?: () => void
   onAdminClick?: () => void
   onOrdersClick?: () => void
+  onLcdInventoryClick?: () => void
 }
 
-export default function Navigation({ onCreateClick, onDashboardClick, user, onLogout, onAdminClick, onOrdersClick }: NavigationProps) {
+export default function Navigation({ onCreateClick, onDashboardClick, user, onLogout, onAdminClick, onOrdersClick, onLcdInventoryClick }: NavigationProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
@@ -99,6 +100,17 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
                       >
                         <ShoppingCart size={16} />
                         Parts Orders
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          onLcdInventoryClick?.()
+                          setShowProfileMenu(false)
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                      >
+                        <Monitor size={16} />
+                        LCD Inventory
                       </button>
 
                       <button
@@ -192,6 +204,13 @@ export default function Navigation({ onCreateClick, onDashboardClick, user, onLo
               >
                 <ShoppingCart size={18} />
                 Parts Orders
+              </button>
+              <button
+                onClick={() => { onLcdInventoryClick?.(); setShowMobileMenu(false) }}
+                className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3 text-sm font-medium text-slate-700"
+              >
+                <Monitor size={18} />
+                LCD Inventory
               </button>
               <div className="divider my-2" />
               <button

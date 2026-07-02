@@ -53,3 +53,40 @@ export type PartsOrder = {
   created_at: string
   updated_at: string
 }
+
+// LCD Inventory types
+export type LcdInventoryItem = {
+  id: string
+  lcd_name: string
+  brand: string
+  branch: string
+  quantity: number
+  created_at: string
+  updated_at: string
+}
+
+export type LcdStockLog = {
+  id: string
+  lcd_inventory_id: string
+  change_type: 'stock_in' | 'stock_out' | 'adjustment' | 'used_for_repair'
+  quantity_change: number
+  previous_quantity: number
+  new_quantity: number
+  ticket_id?: string
+  notes?: string
+  changed_by?: string
+  created_at: string
+}
+
+export const LCD_BRANDS = [
+  'Realme / Oppo',
+  'Infinix / Tecno / Itel',
+  'Samsung',
+  'Vivo',
+  'Huawei / Honor',
+  'Redmi / Poco',
+  'iPhone',
+  'Wiko',
+]
+
+export const LCD_BRANCHES = ['Villanueva', 'Jasaan']

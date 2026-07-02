@@ -5,9 +5,10 @@ import TicketDetail from './pages/TicketDetail'
 import Login from './pages/Login'
 import AdminPartsManagement from './pages/AdminPartsManagement'
 import PartsOrders from './pages/PartsOrders'
+import LcdInventory from './pages/LcdInventory'
 import Navigation from './components/Navigation'
 
-type PageType = 'dashboard' | 'create' | 'detail' | 'admin-parts' | 'parts-orders'
+type PageType = 'dashboard' | 'create' | 'detail' | 'admin-parts' | 'parts-orders' | 'lcd-inventory'
 
 // Toast notification system
 type ToastType = 'success' | 'error' | 'info'
@@ -85,6 +86,10 @@ function App() {
     setCurrentPage('parts-orders')
   }
 
+  const handleLcdInventory = () => {
+    setCurrentPage('lcd-inventory')
+  }
+
 
   if (loading) {
     return (
@@ -107,6 +112,7 @@ function App() {
         onLogout={handleLogout}
         onAdminClick={handleAdminParts}
         onOrdersClick={handlePartsOrders}
+        onLcdInventoryClick={handleLcdInventory}
       />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {currentPage === 'dashboard' && (
@@ -128,6 +134,9 @@ function App() {
         )}
         {currentPage === 'parts-orders' && (
           <PartsOrders onBack={handleBackToDashboard} user={user} />
+        )}
+        {currentPage === 'lcd-inventory' && (
+          <LcdInventory onBack={handleBackToDashboard} user={user} showToast={showToast} />
         )}
       </main>
 
