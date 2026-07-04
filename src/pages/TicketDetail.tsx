@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase, Ticket } from '../lib/supabase'
-import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck, RotateCcw } from 'lucide-react'
+import {
+  ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck, RotateCcw,
+  Smartphone, Monitor, Hand, ShieldAlert, BatteryCharging, PlugZap, Plug,
+  Power, Volume2, Headphones, Mic, Camera, SwitchCamera, SignalZero, Wifi,
+  Bluetooth, Layers, Droplets, Lock, Download, Bug, MoreHorizontal, Info
+} from 'lucide-react'
 import { STATUS_COLORS, PAYMENT_COLORS, formatPeso, formatRelativeTime } from '../lib/utils'
 import { sendTechnicianEmail } from '../lib/email'
+import { REPAIR_TYPES } from '../lib/constants'
 
 interface TicketDetailProps {
   ticketId: string
@@ -22,6 +28,86 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
   const [saving, setSaving] = useState(false)
   const [quickActionLoading, setQuickActionLoading] = useState(false)
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null)
+
+  const renderIssueBadges = (issueDescription: string) => {
+    if (!issueDescription) return <span className="text-slate-500">None</span>
+
+    // Split by comma
+    const issuesList = issueDescription.split(',').map(i => i.trim()).filter(Boolean)
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {issuesList.map((issueName, index) => {
+          // Find corresponding repair type by name match
+          const repair = REPAIR_TYPES.find(
+            r => r.name.toLowerCase() === issueName.toLowerCase()
+          )
+
+          // Default icon if not found
+          let IconComponent = Wrench
+          let accentColor = '#6B7280'
+          let bgLight = '#F3F4F6'
+
+          if (repair) {
+            accentColor = repair.color
+            bgLight = `${repair.color}12` // 7% opacity
+            
+            // Map repair.icon string to Lucide component
+            switch (repair.icon) {
+              case 'Smartphone': IconComponent = Smartphone; break;
+              case 'Monitor': IconComponent = Monitor; break;
+              case 'Hand': IconComponent = Hand; break;
+              case 'ShieldAlert': IconComponent = ShieldAlert; break;
+              case 'BatteryCharging': IconComponent = BatteryCharging; break;
+              case 'PlugZap': IconComponent = PlugZap; break;
+              case 'Plug': IconComponent = Plug; break;
+              case 'Power': IconComponent = Power; break;
+              case 'Volume2': IconComponent = Volume2; break;
+              case 'Headphones': IconComponent = Headphones; break;
+              case 'Mic': IconComponent = Mic; break;
+              case 'Camera': IconComponent = Camera; break;
+              case 'SwitchCamera': IconComponent = SwitchCamera; break;
+              case 'SignalZero': IconComponent = SignalZero; break;
+              case 'Wifi': IconComponent = Wifi; break;
+              case 'Bluetooth': IconComponent = Bluetooth; break;
+              case 'Layers': IconComponent = Layers; break;
+              case 'RotateCcw': IconComponent = RotateCcw; break;
+              case 'Droplets': IconComponent = Droplets; break;
+              case 'Lock': IconComponent = Lock; break;
+              case 'Download': IconComponent = Download; break;
+              case 'Bug': IconComponent = Bug; break;
+              case 'MoreHorizontal': IconComponent = MoreHorizontal; break;
+            }
+          } else {
+            // Check if it looks like a custom note or description
+            if (issueName.toLowerCase().startsWith('notes:') || issueName.includes('\n') || issueName.length > 30) {
+              return (
+                <div key={index} className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl flex gap-2 items-start text-xs text-slate-600 leading-relaxed font-semibold">
+                  <Info size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="whitespace-pre-wrap">{issueName}</div>
+                </div>
+              )
+            }
+          }
+
+          return (
+            <span
+              key={index}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-bold text-xs shadow-xs"
+              style={{
+                backgroundColor: bgLight,
+                borderColor: `${accentColor}25`,
+                color: accentColor
+              }}
+            >
+              <IconComponent size={13} style={{ color: accentColor }} />
+              {issueName}
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
 
   useEffect(() => {
     fetchTicket()
@@ -329,10 +415,10 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         {/* Device Info */}
         <div>
           <h2 className="text-lg font-bold text-slate-900 mb-4">Device Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-slate-600 font-medium mb-1">Device Type</p>
-              <p className="text-slate-900">{ticket.device_type}</p>
+              <p className="text-slate-900 font-semibold">{ticket.device_type}</p>
             </div>
             <div>
               <p className="text-sm text-slate-600 font-medium mb-1">Device Model</p>
@@ -345,12 +431,12 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                   placeholder="e.g., Samsung A07 5G"
                 />
               ) : (
-                <p className="text-slate-900">{ticket.device_model || 'Not specified'}</p>
+                <p className="text-slate-900 font-semibold">{ticket.device_model || 'Not specified'}</p>
               )}
             </div>
-            <div>
-              <p className="text-sm text-slate-600 font-medium mb-1">Issue</p>
-              <p className="text-slate-900">{ticket.issue_description}</p>
+            <div className="md:col-span-2">
+              <p className="text-sm text-slate-600 font-semibold mb-1">Issues & Needed Repairs</p>
+              {renderIssueBadges(ticket.issue_description)}
             </div>
           </div>
         </div>
