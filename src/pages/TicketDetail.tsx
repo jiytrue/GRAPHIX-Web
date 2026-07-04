@@ -21,6 +21,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
   const [deleting, setDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [quickActionLoading, setQuickActionLoading] = useState(false)
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTicket()
@@ -531,6 +532,33 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
           )}
         </div>
 
+        {/* Device Photos */}
+        {ticket.device_photos && ticket.device_photos.length > 0 && (
+          <>
+            <div className="divider" />
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Wrench size={18} className="text-maroon-600" />
+                Device Photos
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {ticket.device_photos.map((photo, index) => (
+                  <div
+                    key={index}
+                    className="relative border border-slate-200 rounded-xl overflow-hidden aspect-square cursor-pointer hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm group bg-slate-50 flex items-center justify-center"
+                    onClick={() => setLightboxPhoto(photo)}
+                  >
+                    <img src={photo} alt={`Device photo ${index + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full">Click to View</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Action Buttons */}
         {editing && (
           <div className="flex gap-3 pt-6 border-t border-slate-200">
@@ -573,6 +601,27 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 animate-fade-in"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-slate-300 p-2 rounded-full hover:bg-white/10 transition-colors"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <X size={32} />
+          </button>
+          <img
+            src={lightboxPhoto}
+            alt="Device Preview"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

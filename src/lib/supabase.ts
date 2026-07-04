@@ -27,6 +27,7 @@ export type Ticket = {
   payment_status?: 'unpaid' | 'partial' | 'paid'
   amount_paid?: number
   payment_method?: 'cash' | 'gcash' | 'maya' | 'bank_transfer'
+  device_photos?: string[]
 }
 
 export type Technician = {

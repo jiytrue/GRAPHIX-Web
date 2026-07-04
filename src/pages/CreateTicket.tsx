@@ -36,6 +36,37 @@ const ICON_MAP: Record<string, any> = {
   Camera,
 }
 
+// Image compression helper
+const compressImage = (base64Str: string, maxWidth = 800, quality = 0.7): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.src = base64Str
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width)
+        width = maxWidth
+      }
+
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      } else {
+        resolve(base64Str)
+      }
+    }
+    img.onerror = () => {
+      resolve(base64Str)
+    }
+  })
+}
+
 export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
@@ -137,9 +168,16 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
     
     Array.from(files).forEach(file => {
       const reader = new FileReader()
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         if (ev.target?.result) {
-          setDevicePhotos(prev => [...prev, ev.target!.result as string])
+          const originalBase64 = ev.target.result as string
+          try {
+            const compressedBase64 = await compressImage(originalBase64)
+            setDevicePhotos(prev => [...prev, compressedBase64])
+          } catch (err) {
+            console.error('Compression error, using original:', err)
+            setDevicePhotos(prev => [...prev, originalBase64])
+          }
         }
       }
       reader.readAsDataURL(file)
@@ -201,6 +239,7 @@ export default function CreateTicket({ onBack, onSuccess }: CreateTicketProps) {
         cost_estimate: costEstimate ? parseFloat(costEstimate) : null,
         amount_paid: 0,
         payment_status: 'unpaid',
+        device_photos: devicePhotos.length > 0 ? devicePhotos : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
