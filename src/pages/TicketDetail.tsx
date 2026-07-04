@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, Ticket } from '../lib/supabase'
-import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck } from 'lucide-react'
+import { ArrowLeft, Printer, Save, X, Trash2, Edit3, Wrench, CheckCircle2, PackageCheck, RotateCcw } from 'lucide-react'
 import { STATUS_COLORS, PAYMENT_COLORS, formatPeso, formatRelativeTime } from '../lib/utils'
 import { sendTechnicianEmail } from '../lib/email'
 
@@ -68,6 +68,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
       const updateData: Record<string, any> = {
         status: formData.status || ticket.status,
         assigned_technician: formData.assigned_technician || ticket.assigned_technician || null,
+        device_model: formData.device_model !== undefined ? formData.device_model : ticket.device_model,
         notes: formData.notes ?? ticket.notes ?? '',
         cost_estimate: formData.cost_estimate !== undefined ? formData.cost_estimate : ticket.cost_estimate,
         updated_at: new Date().toISOString(),
@@ -175,6 +176,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         'repairing': 'Repair started!',
         'repaired': 'Marked as repaired!',
         'received': 'Customer received device!',
+        'returned': 'Marked as returned/refund!',
         'cancelled': 'Ticket cancelled.',
       }
       showToast?.(labels[newStatus] || 'Status updated!', 'success')
@@ -253,7 +255,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
         </div>
 
         {/* Quick Actions Bar */}
-        {!editing && ticket.status !== 'received' && ticket.status !== 'cancelled' && (
+        {!editing && ticket.status !== 'received' && ticket.status !== 'returned' && ticket.status !== 'cancelled' && (
           <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 no-print">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">⚡ Quick Actions</p>
             <div className="flex flex-wrap gap-3">
@@ -278,14 +280,24 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                 </button>
               )}
               {ticket.status === 'repaired' && (
-                <button
-                  onClick={() => handleQuickStatus('received')}
-                  disabled={quickActionLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                >
-                  <PackageCheck size={16} />
-                  Customer Received
-                </button>
+                <>
+                  <button
+                    onClick={() => handleQuickStatus('received')}
+                    disabled={quickActionLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                  >
+                    <PackageCheck size={16} />
+                    Customer Received
+                  </button>
+                  <button
+                    onClick={() => handleQuickStatus('returned')}
+                    disabled={quickActionLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-lg font-medium text-sm hover:bg-orange-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                  >
+                    <RotateCcw size={16} />
+                    Returned / Refund
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -323,7 +335,17 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
             </div>
             <div>
               <p className="text-sm text-slate-600 font-medium mb-1">Device Model</p>
-              <p className="text-slate-900">{ticket.device_model || 'Not specified'}</p>
+              {editing ? (
+                <input
+                  type="text"
+                  value={formData.device_model || ''}
+                  onChange={(e) => setFormData({ ...formData, device_model: e.target.value })}
+                  className="w-full"
+                  placeholder="e.g., Samsung A07 5G"
+                />
+              ) : (
+                <p className="text-slate-900">{ticket.device_model || 'Not specified'}</p>
+              )}
             </div>
             <div>
               <p className="text-sm text-slate-600 font-medium mb-1">Issue</p>
@@ -350,6 +372,7 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
                   <option value="repairing">Repairing</option>
                   <option value="repaired">Repaired</option>
                   <option value="received">Received</option>
+                  <option value="returned">Returned / Refund</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
               ) : (
@@ -558,39 +581,87 @@ export default function TicketDetail({ ticketId, onBack, user, showToast }: Tick
 
 function TicketLabel({ ticket }: { ticket: Ticket }) {
   return (
-    <div className="ticket-label">
-      <div>
-        <div className="ticket-label-big">TICKET ID</div>
-        <div className="text-2xl font-bold mt-2 font-mono">{ticket.ticket_id}</div>
+    <div className="thermal-receipt mx-auto">
+      <div className="thermal-receipt-center">
+        {/* Thermal friendly Phone Logo */}
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" className="mx-auto mb-1">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+          <line x1="12" y1="18" x2="12" y2="18.01" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+        <div className="thermal-receipt-header">GRAPHIX</div>
+        <div className="thermal-receipt-subheader">PHONE REPAIR SERVICE</div>
+        <div className="thermal-receipt-divider" />
+        <div className="thermal-receipt-title">REPAIR TICKET</div>
+        <div className="text-xl font-bold font-mono">#{ticket.ticket_id}</div>
+        <div className="text-[9px] text-slate-500 mt-1">
+          Date: {new Date(ticket.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
       </div>
-      <div className="space-y-2">
-        <div>
-          <div className="font-bold text-sm">Customer:</div>
-          <div className="text-sm">{ticket.customer_name}</div>
-          <div className="text-xs text-slate-600">{ticket.customer_phone}</div>
+      
+      <div className="thermal-receipt-divider" />
+      
+      <div className="space-y-1">
+        <div className="thermal-receipt-row">
+          <span className="thermal-receipt-row-label">Customer:</span>
+          <span className="thermal-receipt-row-val">{ticket.customer_name}</span>
         </div>
-        <div>
-          <div className="font-bold text-sm">Device:</div>
-          <div className="text-xs">{ticket.device_type} {ticket.device_model ? `- ${ticket.device_model}` : ''}</div>
+        <div className="thermal-receipt-row">
+          <span className="thermal-receipt-row-label">Phone:</span>
+          <span className="thermal-receipt-row-val">{ticket.customer_phone}</span>
         </div>
-        <div>
-          <div className="font-bold text-sm">Issue:</div>
-          <div className="text-xs">{ticket.issue_description}</div>
+        <div className="thermal-receipt-row">
+          <span className="thermal-receipt-row-label">Device:</span>
+          <span className="thermal-receipt-row-val">{ticket.device_type} {ticket.device_model}</span>
         </div>
+        <div className="thermal-receipt-row">
+          <span className="thermal-receipt-row-label">Status:</span>
+          <span className="thermal-receipt-row-val uppercase">{ticket.status}</span>
+        </div>
+        {ticket.assigned_technician && (
+          <div className="thermal-receipt-row">
+            <span className="thermal-receipt-row-label">Tech:</span>
+            <span className="thermal-receipt-row-val">{ticket.assigned_technician}</span>
+          </div>
+        )}
         {ticket.received_by && (
-          <div>
-            <div className="font-bold text-sm">Received by:</div>
-            <div className="text-xs">{ticket.received_by}</div>
+          <div className="thermal-receipt-row">
+            <span className="thermal-receipt-row-label">Recv By:</span>
+            <span className="thermal-receipt-row-val">{ticket.received_by}</span>
+          </div>
+        )}
+        {ticket.cost_estimate && (
+          <div className="thermal-receipt-row font-bold text-sm mt-2 pt-2 border-t border-dashed border-black">
+            <span className="thermal-receipt-row-label">TOTAL:</span>
+            <span className="thermal-receipt-row-val">{formatPeso(ticket.cost_estimate)}</span>
           </div>
         )}
       </div>
+      
+      <div className="thermal-receipt-divider" />
+      
       <div>
-        <div className="font-bold text-sm">Status:</div>
-        <div className="text-xs uppercase font-medium">{ticket.status}</div>
+        <span className="thermal-receipt-bold">Repairs Needed:</span>
+        <div className="text-[10px] mt-1 italic leading-tight whitespace-pre-wrap">{ticket.issue_description}</div>
       </div>
-      <div className="border-t pt-2">
-        <div className="text-xs text-slate-600">
-          Created: {new Date(ticket.created_at).toLocaleDateString()}
+      
+      {ticket.notes && (
+        <div className="thermal-receipt-notes">
+          <span className="font-bold">Notes:</span>
+          <p>{ticket.notes}</p>
+        </div>
+      )}
+      
+      <div className="thermal-receipt-footer">
+        <div className="thermal-receipt-bold mb-1">Thank you for choosing Graphix!</div>
+        <div className="text-[9px] mt-2 font-medium">
+          Facebook Page:<br />
+          Graphix Villanueva / Graphix Jasaan
         </div>
       </div>
     </div>

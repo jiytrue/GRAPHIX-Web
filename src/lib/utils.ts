@@ -30,6 +30,11 @@ export const STATUS_COLORS: Record<string, { bg: string; text: string; badge: st
     bg: 'bg-slate-50', 
     text: 'text-slate-700', 
     badge: 'bg-slate-200 text-slate-800'
+  },
+  'returned': { 
+    bg: 'bg-orange-50', 
+    text: 'text-orange-700', 
+    badge: 'bg-orange-100 text-orange-800'
   }
 }
 

@@ -1,5 +1,5 @@
 import { Ticket } from '../lib/supabase'
-import { Search, Wrench, CheckCircle, PackageCheck, XCircle, Smartphone, Play, CheckCircle2, Calendar, User } from 'lucide-react'
+import { Search, Wrench, CheckCircle, PackageCheck, XCircle, Smartphone, Play, CheckCircle2, Calendar, User, RotateCcw } from 'lucide-react'
 import { formatRelativeTime } from '../lib/utils'
 
 interface TicketCardProps {
@@ -21,6 +21,8 @@ export default function TicketCard({ ticket, onClick, onQuickAction }: TicketCar
         return <PackageCheck className="text-purple-600" size={16} />
       case 'cancelled':
         return <XCircle className="text-slate-500" size={16} />
+      case 'returned':
+        return <RotateCcw className="text-orange-600" size={16} />
       default:
         return null
     }
@@ -87,7 +89,7 @@ export default function TicketCard({ ticket, onClick, onQuickAction }: TicketCar
       </div>
 
       {/* Quick Action Buttons */}
-      {onQuickAction && ticket.status !== 'repaired' && ticket.status !== 'received' && ticket.status !== 'cancelled' && (
+      {onQuickAction && ticket.status !== 'repaired' && ticket.status !== 'received' && ticket.status !== 'returned' && ticket.status !== 'cancelled' && (
         <div className="flex gap-2 pt-1">
           {ticket.status === 'diagnosing' && (
             <button

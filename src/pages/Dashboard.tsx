@@ -59,6 +59,7 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
     repairing: allTickets.filter((t) => t.status === 'repairing').length,
     repaired: allTickets.filter((t) => t.status === 'repaired').length,
     received: allTickets.filter((t) => t.status === 'received').length,
+    returned: allTickets.filter((t) => t.status === 'returned').length,
     cancelled: allTickets.filter((t) => t.status === 'cancelled').length,
   }
 
@@ -114,13 +115,14 @@ export default function Dashboard({ onSelectTicket, showToast }: DashboardProps)
     { label: 'Repairing', value: stats.repairing, status: 'repairing', color: 'bg-blue-50 text-blue-800 border-blue-200', ring: 'ring-blue-300' },
     { label: 'Repaired', value: stats.repaired, status: 'repaired', color: 'bg-emerald-50 text-emerald-800 border-emerald-200', ring: 'ring-emerald-300' },
     { label: 'Received', value: stats.received, status: 'received', color: 'bg-purple-50 text-purple-800 border-purple-200', ring: 'ring-purple-300' },
+    { label: 'Returned/Refund', value: stats.returned, status: 'returned', color: 'bg-orange-50 text-orange-800 border-orange-200', ring: 'ring-orange-300' },
     { label: 'Cancelled', value: stats.cancelled, status: 'cancelled', color: 'bg-slate-100 text-slate-600 border-slate-200', ring: 'ring-slate-300' },
   ]
 
   return (
     <div className="space-y-8 animate-slide-in">
       {/* Stats Cards - Clickable */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
         {statCards.map(card => (
           <button
             key={card.status}

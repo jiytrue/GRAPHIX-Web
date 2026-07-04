@@ -62,7 +62,7 @@ CREATE TABLE tickets (
   device_model VARCHAR(100),
   issue_description TEXT NOT NULL,
   assigned_technician VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'diagnosing' CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'cancelled')),
+  status VARCHAR(50) DEFAULT 'diagnosing' CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'returned', 'cancelled')),
   notes TEXT DEFAULT '',
   cost_estimate DECIMAL(10, 2),
   parts JSON,
@@ -472,7 +472,7 @@ INSERT INTO lcd_inventory (lcd_name, brand, branch, quantity) VALUES
 --
 -- Update status constraint to new workflow:
 -- ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_check;
--- ALTER TABLE tickets ADD CONSTRAINT tickets_status_check CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'cancelled'));
+-- ALTER TABLE tickets ADD CONSTRAINT tickets_status_check CHECK (status IN ('diagnosing', 'repairing', 'repaired', 'received', 'returned', 'cancelled'));
 --
 -- Create parts_orders table:
 -- CREATE TABLE IF NOT EXISTS parts_orders (

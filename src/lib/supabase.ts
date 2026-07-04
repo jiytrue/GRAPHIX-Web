@@ -14,7 +14,7 @@ export type Ticket = {
   device_model?: string
   issue_description: string
   assigned_technician: string
-  status: 'diagnosing' | 'repairing' | 'repaired' | 'received' | 'cancelled'
+  status: 'diagnosing' | 'repairing' | 'repaired' | 'received' | 'returned' | 'cancelled'
   created_at: string
   updated_at: string
   notes: string

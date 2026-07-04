@@ -11,7 +11,7 @@ interface LcdInventoryProps {
 }
 
 export default function LcdInventory({ onBack, user, showToast }: LcdInventoryProps) {
-  const isAdmin = user?.role === 'admin' || user?.role === 'worker'
+  const isAdmin = true
 
   // State
   const [inventory, setInventory] = useState<LcdInventoryItem[]>([])

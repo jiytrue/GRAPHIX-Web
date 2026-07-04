@@ -18,6 +18,7 @@ export default function StatusFilter({ label = 'Status:', value, onChange }: Sta
         <option value="repairing">Repairing</option>
         <option value="repaired">Repaired</option>
         <option value="received">Received</option>
+        <option value="returned">Returned / Refund</option>
         <option value="cancelled">Cancelled</option>
       </select>
     </div>
